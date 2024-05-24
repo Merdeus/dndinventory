@@ -1,0 +1,53 @@
+/* DungeonMaster.css */
+
+.button-panel {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px; /* Adjust as needed for spacing */
+  }
+  
+  .panel-button {
+    background-color: #555;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px; /* Adjust padding as needed */
+    font-size: 15px;
+
+    cursor: pointer;
+    width: 190px;
+    height: 65px;
+    transition: background-color 0.2s;
+    flex: 1;
+    margin-right: 10px;
+  }
+  
+  .panel-button:last-child {
+    margin-right: 0;
+  }
+  
+  .panel-button:hover {
+    background-color: #ccbd32;
+    color: #000;
+  }
+
+  .buttonBigger {
+    width: 190px;
+  }
+
+  .buttonSmaller {
+    width: 120px;
+  }
+
+  .buttonDisallowed {
+    background-color: #b93716;
+  }
+
+  .buttonAllowed {
+    background-color: #15ac15;
+  }
+
+  .buttonSelected {
+    background-color: #ccbd32;
+    color: #000;
+  }

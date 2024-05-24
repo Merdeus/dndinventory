@@ -1,0 +1,159 @@
+.inventory-container {
+    background-color: #202020;
+    border-radius: 10px;
+    padding: 20px;
+    padding-top: 10px;
+    height: 90vh;
+    overflow-y: auto;
+    width: 750px;
+    border: 2px solid #ccbd32;
+    margin: auto;
+  }
+  
+  .inventory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .inventory-header h2 {
+    color: #fff;
+  }
+  
+  .sort-div {
+    display: flex;
+
+    align-items: center;
+    margin-top: 5px;
+  }
+  
+  .sort-label {
+    color: #fff;
+    margin-bottom: 5px;
+  }
+  
+  .sort-buttons {
+    display: flex;
+    justify-content: center;
+    margin-left: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .sort-buttons button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #555;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .sort-buttons button:hover {
+    background-color: #ccbd32;
+    color: #000;
+  }
+
+  
+  .sort-buttons .selected {
+    background-color: #ccbd32;
+    color: #000;
+  }
+  
+  .inventory-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+
+/* Item.css */
+
+
+
+.item-container {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 6px 0;
+    margin-bottom: 2px;
+    background-color: #444;
+    border-radius: 8px;
+    color: #fff;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s, box-shadow 0.2s;
+  }
+  
+  .item-container:hover {
+    transform: translateX(-4px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .item-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+  
+  .item-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+  }
+  
+  .item-name {
+    font-weight: bold;
+    margin-right: 12px;
+    margin-left: 3px;
+  }
+  
+  .item-description {
+    flex-grow: 1;
+    font-size: 14px;
+    margin-right: 50px;
+    white-space: nowrap;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .item-value {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  
+
+
+
+
+
+/* ContextMenu.css */
+.context-menu {
+    position: absolute;
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    z-index: 1000;
+    padding: 5px;
+    width: 80px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+  }
+  
+  .context-menu-item {
+    padding: 5px 10px;
+    height: 20px;
+    cursor: pointer;
+  }
+  
+  .context-menu-item:hover {
+    background-color: #555;
+  }
+  
+  .context-menu.submenu {
+    position: absolute;
+    top: 0;
+  }

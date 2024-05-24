@@ -1,0 +1,76 @@
+.inner-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    background-color: #333;
+    color: white;
+  }
+
+  .inner-new-container {
+    display: flex;
+    align-items: center;
+    border-radius: 5px;
+    border: 2px solid #333; /* Darker border color */
+    background-color: #222222; /* Same background color as border */
+    padding: 10px;
+  }
+
+  .inner-new-container input {
+    flex: 1;
+    padding: 8px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 3px;
+    background-color: #6e6e6e; /* White background for input */
+    color: #e4e4e4; /* Text color for input */
+  }
+
+.select-game-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #333;
+    color: white;
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  
+  .game-button {
+    background-color: #555;
+    color: white;
+    font-size: 1.2em;
+    padding: 12px 20px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .game-button:hover {
+    background-color: #777;
+  }
+  
+  .game-button-small {
+    background-color: #555;
+    color: white;
+    font-size: 1em;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .game-button-small:hover {
+    background-color: #777;
+  }
+

@@ -1,0 +1,16 @@
+.select-player-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 20vh;
+    text-align: center;
+  }
+  
+  .select-player-title {
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: azure;
+  }
+  
