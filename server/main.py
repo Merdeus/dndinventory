@@ -2,6 +2,7 @@ import itertools
 import traceback
 from typing import List, Type
 from xmlrpc.client import Boolean
+from dotenv import load_dotenv
 
 print("Welcome to the DnD-Inventory backend!!")
 
@@ -13,6 +14,7 @@ import random
 import websockets
 import string
 import ssl
+import os
 import websockets.exceptions
 
 import logging
@@ -20,6 +22,8 @@ import sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+
+load_dotenv()
 
 logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
 
@@ -1060,14 +1064,24 @@ async def newserver(websocket, path):
 
 
 
+certificate_path = os.getenv("SSL_CERTIFICATE")
+privatekey_path = os.getenv("SSL_PRIVATE_KEY")
 
+ssl_context = None
 
-# # creating ssl context for secure connection (wss instead of ws)
-# ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-# ssl_context.load_cert_chain(certfile="certificate.crt", keyfile="private.key")
+if certificate_path is not None and privatekey_path is not None:
+    # creating ssl context for secure connection (wss instead of ws)
+    try:
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_context.load_cert_chain(certfile=certificate_path, keyfile=privatekey_path)
+    except FileNotFoundError:
+        ssl_context = None
+        print("Certificate file not found")
+else:
+    print("No SSL certificate provided")
 
 # create websocket server
-start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None)
+start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None, ssl=ssl_context)
 asyncio.get_event_loop().run_until_complete(start_server)
 
 try:

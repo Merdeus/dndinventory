@@ -3,6 +3,8 @@
 /server/.idea
 /server/.venv
 /server/players.db
+server/.env
+
 
 # dependencies
 react/node_modules
