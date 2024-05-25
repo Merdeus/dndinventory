@@ -181,7 +181,7 @@ class Item(Base):
         if tmp is None:
             raise NotFoundByIDException("Item not found")
         else:
-            return Item(tmp)
+            return tmp
 
 
 # items which can be given to players
@@ -223,12 +223,6 @@ class ItemPrefab(Base):
         } for i in tmp]
         session.close()
         return res
-
-
-
-
-
-
 
 class GameSettings(Base):
     __tablename__ = 'game_settings'
@@ -324,7 +318,6 @@ class Game(Base):
                 continue
 
             await client.sendItemList()
-
         remove_disconnected_clients()
 
     @staticmethod
@@ -510,9 +503,9 @@ class Client:
         return True
 
 
-    def SellItem(self, item : Item) -> (bool, str):
+    async def SellItem(self, item : Item, session) -> (bool, str):
         if self.isDM:
-            return False
+            return False, "You are a DM, you can't sell items... duh"
         if not item.isPlayerOwner(self.playerid):
             return False, f"You can't sell an item that is not owned by your player!"
         if item.isQuestItem():
@@ -520,29 +513,28 @@ class Client:
         if not self.isAllowedToSell(item):
             return False, f"You currently are not able to sell anything."
 
-        session = Session()
-
         ply = Player.getFromId(self.playerid, session)
 
         ply.gold += item.value
-        take_player_item(self.playerid, item, session=session)
-        message = f'Player {self.player.name} sold item "{item.name}" for {item.value} gold'
+
+        await Game.syncPlayerItem(self.gameid, item.id, isRemoval=True)
+
+        session.delete(item)
+        session.commit()
+
+        message = f'Player {ply.name} sold item "{item.name}" for {item.value} gold'
         log(message)
         return True, message
 
-    def SendItem(self, item : Item, toSentplayer : Player) -> (bool, str):
-        if not item.isPlayerOwner(self.playerid):
+    def SendItem(self, item : Item, toSentplayer : int, session) -> (bool, str):
+        # maybe check if both players are part of the same game?
+        if not self.isDM and not item.isPlayerOwner(self.playerid):
             return False, f"You don't own this item!"
 
-        session = Session()
         item.owner = toSentplayer
         session.commit()
-        session.close()
 
-        syncPlayer(self.player)
-        syncPlayer(toSentplayer)
-
-        return True, f'{self.player.name} has sent {toSentplayer.name} the item "{item.name}"'
+        return True
 
 
     def DestroyItem(self, item : int) -> (bool, str):
@@ -594,170 +586,199 @@ class Client:
                 msg = json.loads(msg)
 
                 print(f"# New Message: {msg['type']}")
-
-                match msg["type"]:
-                    case "SellItem":
-                        pass
-                    case "SendItem":
-                        pass
-                    case "DeleteItem":
-
-                        try:
+                try:
+                    match msg["type"]:
+                        case "SellItem":
                             item_id = msg["item_id"]
-                            player_id = msg["player_id"]
                             session = Session()
                             current_item = Item.getFromId(item_id, session)
 
-                            if not (self.isDM or (player_id == self.playerid and player_id == current_item.owner)):
+                            succ, msg = await self.SellItem(current_item, session)
+                            if not succ:
                                 await self.send(json.dumps({
                                     "type": "error",
-                                    "msg": "You do not own this item, therefore you can't destroy it"
+                                    "msg": msg
                                 }))
-                                continue
-
-                            await Game.syncPlayerItem(self.gameid, current_item.id, isRemoval=True)
-                            session.delete(current_item)
-                            session.commit()
                             session.close()
 
-
-                        except KeyError as e:
-                            print("DeleteItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Invalid DeleteItem message"
-                            }))
-
-                        except NotFoundByIDException as e:
-                            print("DeleteItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": f"Invalid DeleteItem message | {e}"
-                            }))
-
-                    case "GiveItem":
-                        if not self.isDM:
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Illegal operation"
-                            }))
-                            return
-
-                        try:
+                        case "SendItem":
+                            item_id = msg["item_id"]
+                            to_sent_player_id = msg["player_id"]
                             session = Session()
-                            item_id = msg["item_id"] # prefab item id
-                            player_id = msg["player_id"]
-                            ply = Player.getFromId(player_id, session)
-                            item_prefab = ItemPrefab.getFromId(item_id, session)
-                            tmp = give_player_item(ply, item_prefab, session)
-                            if not tmp:
+                            current_item = Item.getFromId(item_id, session)
+                            await self.SendItem(current_item, to_sent_player_id, session)
+
+                        case "DeleteItem":
+
+                            try:
+                                item_id = msg["item_id"]
+                                player_id = msg["player_id"]
+                                session = Session()
+                                current_item = Item.getFromId(item_id, session)
+
+                                if not (self.isDM or (player_id == self.playerid and player_id == current_item.owner)):
+                                    await self.send(json.dumps({
+                                        "type": "error",
+                                        "msg": "You do not own this item, therefore you can't destroy it"
+                                    }))
+                                    continue
+
+                                await Game.syncPlayerItem(self.gameid, current_item.id, isRemoval=True)
+                                session.delete(current_item)
+                                session.commit()
+                                session.close()
+
+
+                            except KeyError as e:
+                                print("DeleteItem Error:", e)
                                 await self.send(json.dumps({
                                     "type": "error",
-                                    "msg": "An error occured while trying to give a player item!"
+                                    "msg": "Invalid DeleteItem message"
                                 }))
-                                continue
-                            if type(tmp) == Item:
-                                await Game.syncPlayerItem(self.gameid, tmp)
 
-                        except KeyError as e:
-                            print("GiveItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Invalid GiveItem message"
-                            }))
+                            except NotFoundByIDException as e:
+                                print("DeleteItem Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Invalid DeleteItem message | {e}"
+                                }))
 
-                        except NotFoundByIDException as e:
-                            print("GiveItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": f"Invalid GiveItem message | {e}"
-                            }))
+                        case "GiveItem":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
 
-                    case "AddItem":
-                        if not self.isDM:
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Illegal operation"
-                            }))
-                            return
+                            try:
+                                session = Session()
+                                item_id = msg["item_id"] # prefab item id
+                                player_id = msg["player_id"]
+                                ply = Player.getFromId(player_id, session)
+                                item_prefab = ItemPrefab.getFromId(item_id, session)
+                                tmp = give_player_item(ply, item_prefab, session)
+                                if not tmp:
+                                    await self.send(json.dumps({
+                                        "type": "error",
+                                        "msg": "An error occured while trying to give a player item!"
+                                    }))
+                                    continue
+                                if type(tmp) == Item:
+                                    await Game.syncPlayerItem(self.gameid, tmp)
 
-                        try:
+                            except KeyError as e:
+                                print("GiveItem Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid GiveItem message"
+                                }))
 
-                            newItem = msg["item"]
-                            create_new_item(newItem["name"], newItem["description"], newItem["value"], newItem["image"], int(newItem["rarity"]), int(newItem["itemType"]))
-                            await Game.updateItemList(self.gameid)
+                            except NotFoundByIDException as e:
+                                print("GiveItem Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Invalid GiveItem message | {e}"
+                                }))
 
-                        except KeyError as e:
-                            print("AddItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Invalid GiveItem message"
-                            }))
+                        case "AddItem":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
 
-                        except NotFoundByIDException as e:
-                            print("AddItem Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": f"Invalid GiveItem message | {e}"
-                            }))
+                            try:
+
+                                newItem = msg["item"]
+                                create_new_item(newItem["name"], newItem["description"], newItem["value"], newItem["image"], int(newItem["rarity"]), int(newItem["itemType"]))
+                                await Game.updateItemList(self.gameid)
+
+                            except KeyError as e:
+                                print("AddItem Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid GiveItem message"
+                                }))
+
+                            except NotFoundByIDException as e:
+                                print("AddItem Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Invalid GiveItem message | {e}"
+                                }))
 
 
-                    case "CreatePlayer":
-                        if not self.isDM:
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Illegal operation"
-                            }))
-                            return
-                        try:
-                            print(msg)
-                            player_name = msg["player_name"]
-                            player_gold = msg["gold"]
-                            if player_name is None or player_name == "" or player_gold is None:
-                                raise KeyError
+                        case "CreatePlayer":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+                            try:
+                                print(msg)
+                                player_name = msg["player_name"]
+                                player_gold = msg["gold"]
+                                if player_name is None or player_name == "" or player_gold is None:
+                                    raise KeyError
 
-                            player_gold = max(0, player_gold)
-                            await registerNewPlayer(player_name, self.gameid, player_gold)
-                        except KeyError as e:
-                            print(e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Invalid CreatePlayer message"
-                            }))
+                                player_gold = max(0, player_gold)
+                                await registerNewPlayer(player_name, self.gameid, player_gold)
+                            except KeyError as e:
+                                print(e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid CreatePlayer message"
+                                }))
 
-                    case "SetPlayerGold":
-                        if not self.isDM:
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Illegal operation"
-                            }))
+                        case "SetPlayerGold":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
 
-                        try:
-                            toSetPlayer = msg["player_id"]
-                            gold = msg["gold"]
+                            try:
+                                toSetPlayer = msg["player_id"]
+                                gold = msg["gold"]
 
-                            session = Session()
-                            current_player = Player.getFromId(toSetPlayer, session)
-                            current_player.gold = max(gold,0)
-                            session.commit()
-                            await Game.syncPlayerGold(self.gameid, current_player)
-                            session.close()
+                                session = Session()
+                                current_player = Player.getFromId(toSetPlayer, session)
+                                current_player.gold = max(gold,0)
+                                session.commit()
+                                await Game.syncPlayerGold(self.gameid, current_player)
+                                session.close()
 
-                        except KeyError as e:
-                            print(e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": "Invalid SetPlayerGold message"
-                            }))
-                        except NotFoundByIDException as e:
-                            print("SetPlayerGold Error:", e)
-                            await self.send(json.dumps({
-                                "type": "error",
-                                "msg": f"Invalid SetPlayerGold message | {e}"
-                            }))
+                            except KeyError as e:
+                                print(e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid SetPlayerGold message"
+                                }))
+                            except NotFoundByIDException as e:
+                                print("SetPlayerGold Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Invalid SetPlayerGold message | {e}"
+                                }))
 
-                    case _:
-                        print(f"Unknown message type {msg['type']}")
+                        case _:
+                            print(f"Unknown message type {msg['type']}")
+                except KeyError as e:
+                    print("e Error:", e)
+                    await self.send(json.dumps({
+                        "type": "error",
+                        "msg": "Invalid un message"
+                    }))
+
+                except NotFoundByIDException as e:
+                    print("e Error:", e)
+                    await self.send(json.dumps({
+                        "type": "error",
+                        "msg": f"Invalid un message | {e}"
+                    }))
 
         except websockets.exceptions.WebSocketException:
             # Connection is not there anymore? Or something is fucky wucky

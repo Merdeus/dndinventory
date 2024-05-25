@@ -14,7 +14,11 @@ const SelectGame = () => {
     const { gameName, gameDescription, gamePW, creationCode } = tab;
     console.log("Creating session for game: ", gameName);
 
-    webSocketService.connect('ws://localhost:8273', () => {
+    
+    const domain = window.location.hostname;
+    
+
+    webSocketService.connect('ws://' + domain + ':8273', () => {
       webSocketService.sendMessage({
         type: "register", 
         action: "createSession",
@@ -31,7 +35,7 @@ const SelectGame = () => {
   const joinSession = (joinCode) => {
     console.log("Joining session with ID: " + joinCode);
 
-    webSocketService.connect('ws://localhost:8273', () => {
+    webSocketService.connect('ws://' + domain + ':8273', () => {
       webSocketService.sendMessage({
         type: "register", 
         action: "joinSession",
