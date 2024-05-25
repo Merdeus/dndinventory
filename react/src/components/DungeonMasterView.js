@@ -6,6 +6,7 @@ import { useWebSocket } from './WebSocketContext';
 import ItemList from './ItemList';
 import './DungeonMasterView.css';
 import PlayerList from './PlayerList';
+import LootList from './LootList';
 
 const DungeonMasterView = () => {
 
@@ -18,7 +19,7 @@ const DungeonMasterView = () => {
 
   useEffect(() => {
   
-    if (matchState.inventories.length <= 0) {
+    if (Object.values(matchState.inventories).length <= 0) {
         setPlayers([
             { id: 0, name: 'None', inventory: [] }
         ])
@@ -67,6 +68,15 @@ const DungeonMasterView = () => {
     });
   };
 
+  const deleteItem = (item) => {
+    console.log('DM: Delete item:', item);
+    webSocketService.sendMessage({
+      type: 'DeleteItem',
+      item_id: item.id,
+      player_id: players.find(p => p.name === selectedPlayer).id,
+    });
+  }
+
   if (players.length < 1) {
     return <div>Loading...</div>;
   } else {
@@ -82,6 +92,7 @@ const DungeonMasterView = () => {
           </div>
           {currentLeftTab === "Items" && <ItemList items={itemlist} players={players} />}
           {currentLeftTab === "Players" && <PlayerList players={players} setPlayerGold={setPlayerGold} />}
+          {currentLeftTab === "Loot" && <LootList players={players} items={[]} />}
         </div>
         <div style={styles.rightPanel}>
           
@@ -95,7 +106,7 @@ const DungeonMasterView = () => {
               ))}
             </select>
           </div>
-          <Inventory items={getSelectedPlayerInventory()} players={players} isDMView={true} />
+          <Inventory items={getSelectedPlayerInventory()} players={players} isDMView={true} deleteItem={deleteItem} />
         </div>
       </div>
     );

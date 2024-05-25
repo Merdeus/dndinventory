@@ -90,9 +90,12 @@ const Item = ({ name, description, value, image, onRightClick }) => {
 };
 
 
-const Inventory = ({ items, players, isDMView }) => {
+const Inventory = ({ items, players, isDMView, deleteItem }) => {
   const [sortType, setSortType] = useState('id');
   const [contextMenu, setContextMenu] = useState(null);
+
+  if (!deleteItem)
+    deleteItem = (item) => console.log('DeleteItem not implemented: ', item);
 
   const sortedItems = [...items].sort((a, b) => {
     if (sortType === 'name') {
@@ -112,7 +115,7 @@ const Inventory = ({ items, players, isDMView }) => {
     }
   
     options.push(
-      { label: 'Delete', onClick: () => console.log('Delete', item) },
+      { label: 'Delete', onClick: () => deleteItem(item) },
       {
         label: 'Send to',
         submenu: players.map(player => ({

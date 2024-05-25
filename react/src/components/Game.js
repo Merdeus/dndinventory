@@ -69,14 +69,27 @@ function Game() {
       }
       webSocketService.addMessageHandler(inventoryupdate_handlerMessage);
 
-
       webSocketService.addMessageHandler({
         identifier: 'gold_update_handler',
         messageType: "gold_update",
         callback: (message) => {
-          console.log("Gold Update:", message.msg);
+          console.log("Gold Update:", message.msg, Object.keys(matchState.inventories), matchState.inventories[message.msg.playerid]);
           //matchState.game.players[message.msg.playerid].gold = message.msg.gold;
           matchState.inventories[message.msg.playerid].gold = message.msg.gold;
+          updateMatchState([]); // stoopid
+        }
+      });
+
+      webSocketService.addMessageHandler({
+        identifier: 'item_removal_handler',
+        messageType: "item_removal",
+        callback: (message) => {
+          console.log("Item Removal:", message.msg);
+          if (matchState.isDM) {
+            delete matchState.inventories[message.msg.playerid].inventory[message.msg.itemid];
+          } else {
+            delete matchState.player.inventory[message.msg.itemid];
+          }
           updateMatchState([]); // stoopid
         }
       });
@@ -154,7 +167,7 @@ function Game() {
               />
             </>;
     } else {
-      return <Inventory items={items} players={players} />;
+      return <Inventory items={items} players={matchState.game.players} />;
     }
   }
   

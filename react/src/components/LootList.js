@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWebSocket } from './WebSocketContext';
 import ItemModal from './ItemModal';
-import './ItemList.css';
+import './LootList.css';
 
 const ContextMenu = ({ position, options, onClose }) => {
   const [submenuPosition, setSubmenuPosition] = useState(null);
@@ -83,7 +83,7 @@ const Item = ({ name, description, value, image, onRightClick }) => {
   );
 };
 
-const ItemList = ({ items, players }) => {
+const LootList = ({ items, players }) => {
   const [sortType, setSortType] = useState('name');
   const [contextMenu, setContextMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +157,7 @@ const ItemList = ({ items, players }) => {
   return (
     <div className="inventory-container">
       <div className="inventory-header">
-        <h2>Items</h2>
+        <h2>Loot</h2>
         <div className='sort-div'>
           <div className="sort-label">Sort by:</div>
           <div className="sort-buttons">
@@ -178,6 +178,11 @@ const ItemList = ({ items, players }) => {
           &#43; {/* Plus symbol */}
         </button>
       </div>
+
+        <div className="loot-container centerLootContainer" onClick={() => {}}>
+			Generate Loot
+	    </div>
+
       <div className="inventory-list">
         {sortedItems.map(item => (
           <Item
@@ -206,4 +211,4 @@ const ItemList = ({ items, players }) => {
   );
 };
 
-export default ItemList;
+export default LootList;

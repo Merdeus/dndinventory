@@ -2,7 +2,7 @@
 
 /server/.idea
 /server/.venv
-/server/player.db
+/server/players.db
 
 # dependencies
 react/node_modules
