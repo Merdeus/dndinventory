@@ -29,6 +29,7 @@ class WebSocketService {
         };
 
         this.socket.onclose = () => {
+            this.connecting = false;
             if (!this.connected) {
               alert("Connection to server failed. Can't reach the backend.");
               return;
