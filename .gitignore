@@ -8,6 +8,7 @@ server/.env
 
 # dependencies
 react/node_modules
+react/.env
 /.pnp
 .pnp.js
 
