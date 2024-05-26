@@ -28,6 +28,11 @@ const Item = ({ id, name, count, description, value, image, rarity, type, onRigh
       image = 'https://www.dndbeyond.com/attachments/2/741/potion.jpg';
     }
 
+    if (!count)
+    {
+        count = 1;
+    }
+
     const handleDragStart = (e) => {
         e.dataTransfer.setData('id', id);
     };
@@ -47,7 +52,7 @@ const Item = ({ id, name, count, description, value, image, rarity, type, onRigh
           {count > 1 && <div className={`item-name count`}>({count})</div>}
           <div className="item-description">{description}</div>
           <div className="item-type">{typeNames[type]}</div>
-          <div className="item-value">{`${value}GP`}</div>
+          <div className="item-value">{`${value * count}GP`}</div>
         </div>
       </div>
     );

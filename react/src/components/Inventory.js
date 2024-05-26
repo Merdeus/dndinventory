@@ -146,6 +146,7 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem }) => {
       <div className="inventory-list">
         {sortedItems.map(item => (
           <Item
+            key={item.id}
             id={item.id}
             name={item.name}
             description={item.description}

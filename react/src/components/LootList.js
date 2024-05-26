@@ -111,7 +111,7 @@ const LootList = ({ items, players }) => {
     });
   };
 
-  const handleLootModalSubmit = () => {
+  const handleLootModalSubmit = (lootlist) => {  
 
     // TODO: Implement loot generation
     setIsLootModalOpen(false);

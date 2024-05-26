@@ -121,11 +121,12 @@ const ItemList = ({ items, players }) => {
 
   const handleSaveEditItem = (item) => {
     console.log('Edit item saved:', item);
-    setEditItem(null);
+    item.id = editItem.id;
     webSocketService.sendMessage({
       type: 'EditItem',
       item: item,
     });
+    setEditItem(null);
   }
   
 
@@ -208,6 +209,7 @@ const ItemList = ({ items, players }) => {
       <div className="inventory-list">
         {sortedItems.map(item => (
           <Item
+            key={item.id}
             id={item.id}
             name={item.name}
             description={item.description}

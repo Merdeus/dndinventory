@@ -84,7 +84,7 @@ const ItemModal = ({ prevStuff, isOpen, onClose, onSave }) => {
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h2>{prevStuff ? "Edit Item" : "Create New Item" }</h2>
+        <h2>{prevStuff.name !== "" ? "Edit Item" : "Create New Item" }</h2>
         <label className="ItemModalLabel">
           Name:
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} />

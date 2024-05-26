@@ -3,6 +3,7 @@ import traceback
 from typing import List, Type
 from xmlrpc.client import Boolean
 from dotenv import load_dotenv
+from sqlalchemy.ext.hybrid import hybrid_property
 
 print("Welcome to the DnD-Inventory backend!!")
 
@@ -148,17 +149,34 @@ class Item(Base):
 
     id = Column(Integer, primary_key=True)
     id_prefab = Column(Integer, ForeignKey('item_prefabs.id'), nullable=False)
-    type = Column(Integer)
-    name = Column(String)
-    rarity = Column(Integer)
-    description = Column(String)
-    value = Column(Integer)
-    img = Column(String)
     count = Column(Integer, default=1)
-    amount = Column(Integer)
     owner = Column(Integer, ForeignKey('players.id'))
 
     prefab = relationship("ItemPrefab", back_populates="items")
+
+    @hybrid_property
+    def type(self):
+        return self.prefab.type
+
+    @hybrid_property
+    def name(self):
+        return self.prefab.name
+
+    @hybrid_property
+    def rarity(self):
+        return self.prefab.rarity
+
+    @hybrid_property
+    def description(self):
+        return self.prefab.description
+
+    @hybrid_property
+    def value(self):
+        return self.prefab.value
+
+    @hybrid_property
+    def img(self):
+        return self.prefab.img
 
 
     def to_json(self):
@@ -720,6 +738,28 @@ class Client:
                                     "msg": f"Invalid GiveItem message | {e}"
                                 }))
 
+                        case "EditItem":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            editItem = msg["item"]
+                            print("EditItem: ", editItem)
+                            session = Session()
+
+                            # edit item in database
+                            edit_item(editItem, session)
+
+                            # update itemlists of dms
+                            await Game.updateItemList(self.gameid)
+
+                            # update any items of the edited item prefab
+                            for item in Game.getAllItemsWithPrefabID(self.gameid, editItem["id"], session):
+                                await Game.syncPlayerItem(self.gameid, item)
+
                         case "AddItem":
                             if not self.isDM:
                                 await self.send(json.dumps({
@@ -884,12 +924,6 @@ def give_player_item(gameid, player, item : ItemPrefab, session = None) -> (Item
     if curItem is None or not curItem.prefab.stackable:
         newItem = Item(
             id_prefab = item.id,
-            type = item.type,
-            name = item.name,
-            rarity = item.rarity,
-            description = item.description,
-            value = item.value,
-            img = item.img,
             count = 1,
             owner = player.id
         )
@@ -924,6 +958,31 @@ def take_player_item(player, item : Item, session = None) -> bool:
 
     if notSession:
         session.close()
+
+def edit_item(editItem, session) -> Item | None:
+    if editItem is None:
+        return None
+
+    try:
+        toEditItem = ItemPrefab.getFromId(editItem["id"], session)
+
+        toEditItem.name = editItem["name"]
+        toEditItem.type = editItem["itemType"]
+        toEditItem.rarity = editItem["rarity"]
+        toEditItem.description = editItem["description"]
+        toEditItem.value = editItem["value"]
+        toEditItem.img = editItem["image"]
+        toEditItem.stackable = editItem["isStackable"]
+        toEditItem.unique = editItem["isUnique"]
+
+        session.commit()
+        return toEditItem
+
+    except NotFoundByIDException as e:
+        logErrorAndNotify("Edit item not found")
+        return None
+
+
 
 def create_new_item(name : str, description: str, value : int, img : str, rarity: int, itype: int, unique : bool = False, stackable : bool = False) -> bool:
     if name is None or description is None or value is None:
