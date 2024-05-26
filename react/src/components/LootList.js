@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useWebSocket } from './WebSocketContext';
 import ItemModal from './ItemModal';
 import './LootList.css';
+import LootModal from './LootModal';
 
 const ContextMenu = ({ position, options, onClose }) => {
   const [submenuPosition, setSubmenuPosition] = useState(null);
@@ -88,6 +89,8 @@ const LootList = ({ items, players }) => {
   const [contextMenu, setContextMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLootModalOpen, setIsLootModalOpen] = useState(false);
+
   const webSocketService = useWebSocket();
 
   const handleSearchChange = (e) => {
@@ -106,8 +109,17 @@ const LootList = ({ items, players }) => {
       type: 'AddItem',
       item: newItem,
     });
-
   };
+
+  const handleLootModalSubmit = () => {
+
+    // TODO: Implement loot generation
+    setIsLootModalOpen(false);
+  }
+
+  const handleLootModalClose = () => {
+    setIsLootModalOpen(false);
+  }
 
   const sortedItems = [...items]
     .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -154,7 +166,9 @@ const LootList = ({ items, players }) => {
     setContextMenu(null);
   };
 
+
   return (
+    <>
     <div className="inventory-container">
       <div className="inventory-header">
         <h2>Loot</h2>
@@ -179,7 +193,7 @@ const LootList = ({ items, players }) => {
         </button>
       </div>
 
-        <div className="loot-container centerLootContainer" onClick={() => {}}>
+        <div className="loot-container centerLootContainer" onClick={() => {setIsLootModalOpen(true)}}>
 			Generate Loot
 	    </div>
 
@@ -208,6 +222,14 @@ const LootList = ({ items, players }) => {
         onSave={handleSaveNewItem}
       />
     </div>
+      {isLootModalOpen && (
+        <LootModal
+          onClose={handleLootModalClose}
+          onSubmit={handleLootModalSubmit}
+        />
+      )}
+    
+    </>
   );
 };
 

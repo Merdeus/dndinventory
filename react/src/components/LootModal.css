@@ -1,0 +1,92 @@
+/* LootModal.css */
+
+.loot-modal {
+
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    align-items: center;
+
+  }
+  
+  .preset-dropdown {
+    display: flex;
+    align-items: center;
+
+    margin-bottom: 10px;
+  }
+
+  .loot-modal h2 {
+    margin-bottom: 0px;
+  }
+  
+  .preset-dropdown select {
+    width: 200px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 15px;
+  }
+  
+  .submit-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .submit-button:hover {
+    background-color: #45a049;
+  }
+  
+  .lootmodal-item-count {
+    margin-bottom: 20px;
+  }
+  
+  .lootmodal-item-count input {
+    margin-left: 8px;
+    width: 45px;
+  }
+
+  .lootmodal-item-count div {
+    margin-bottom: 10px;
+  }
+
+  
+  .lootmodal-button-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .lootmodal-cancel-button {
+    background-color: #b92626;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .lootmodal-cancel-button:hover {
+    background-color: #d42d2d;
+  }
+  
+  .lootmodal-submit-button {
+    background-color: #31861c;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .lootmodal-submit-button:hover {
+    background-color: #3cb31e
+  }

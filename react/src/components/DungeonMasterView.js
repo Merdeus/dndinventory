@@ -49,6 +49,11 @@ const DungeonMasterView = () => {
     return player ? Object.values(player.inventory) : [];
   };
 
+  const getSelectedPlayer = () => {
+    const player = players.find(p => p.name === selectedPlayer);
+    return player;
+  };
+
   const handleAllowSelling = () => {
     setAllowedToSell(!allowedToSell);
   }
@@ -76,6 +81,14 @@ const DungeonMasterView = () => {
       player_id: players.find(p => p.name === selectedPlayer).id,
     });
   }
+
+  const giveItem = (player, item) => {
+    console.log('DM: Give item:', item, 'to player:', player);
+    webSocketService.sendMessage({
+      type: 'GiveItem',
+      player_id: player,
+      item_id: item,
+    })};
 
   if (players.length < 1) {
     return <div>Loading...</div>;
@@ -106,7 +119,8 @@ const DungeonMasterView = () => {
               ))}
             </select>
           </div>
-          <Inventory items={getSelectedPlayerInventory()} players={players} isDMView={true} deleteItem={deleteItem} />
+          {console.log("Reee  Selected player:", getSelectedPlayer())}
+          <Inventory id={getSelectedPlayer().id} items={getSelectedPlayerInventory()} players={players} isDMView={true} giveItem={giveItem} deleteItem={deleteItem} />
         </div>
       </div>
     );

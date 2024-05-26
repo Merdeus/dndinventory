@@ -5,6 +5,7 @@ class WebSocketService {
       this.cleanupHandlers = [];
       this.closing = false;
       this.connected = false;
+      this.connecting = false;
     }
   
     connect(url, callback) {
@@ -13,10 +14,17 @@ class WebSocketService {
             return;
         }
 
+        if (this.connecting) {
+            console.error('WebSocketService: You are already trying to connect');
+            return;
+        }
+
+        this.connecting = true;
         this.socket = new WebSocket(url);
         this.socket.onmessage = this.handleMessage;
         this.socket.onopen = () => {
           this.connected=true;
+          this.connecting = false;
           callback()
         };
 

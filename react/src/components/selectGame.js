@@ -15,7 +15,7 @@ const SelectGame = () => {
     console.log("Creating session for game: ", gameName);
     
     const domain = window.location.hostname;
-      webSocketService.connect('wss://' + domain + ':8273', () => {
+      webSocketService.connect('ws://' + domain + ':8273', () => {
       webSocketService.sendMessage({
         type: "register", 
         action: "createSession",
@@ -33,7 +33,7 @@ const SelectGame = () => {
     console.log("Joining session with ID: " + joinCode);
 
     const domain = window.location.hostname;
-    webSocketService.connect('wss://' + domain + ':8273', () => {
+    webSocketService.connect('ws://' + domain + ':8273', () => {
       webSocketService.sendMessage({
         type: "register", 
         action: "joinSession",
@@ -44,10 +44,6 @@ const SelectGame = () => {
     });
 
   };
-
-
-
-
 
   return (
     <div className="select-game-container">

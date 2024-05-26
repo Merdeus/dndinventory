@@ -72,64 +72,6 @@
 
 
 
-.item-container {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    margin: 6px 0;
-    margin-bottom: 2px;
-    background-color: #444;
-    border-radius: 8px;
-    color: #fff;
-    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.1s, box-shadow 0.2s;
-  }
-  
-  .item-container:hover {
-    transform: translateX(-4px);
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .item-image {
-    width: 40px;
-    height: 40px;
-    border-radius: 4px;
-    margin-right: 10px;
-  }
-  
-  .item-content {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    overflow: hidden;
-  }
-  
-  .item-name {
-    font-weight: bold;
-    margin-right: 12px;
-    margin-left: 3px;
-  }
-  
-  .item-description {
-    flex-grow: 1;
-    font-size: 14px;
-    margin-right: 50px;
-    white-space: nowrap;
-    font-style: italic;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .item-value {
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  
-
-
-
-
-
 /* ContextMenu.css */
 .context-menu {
     position: absolute;

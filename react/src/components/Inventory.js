@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import './Inventory.css';
+import Item from './Item';
 
+const rarityNames = {
+  1: 'common',
+  2: 'uncommon',
+  3: 'rare',
+  4: 'veryrare',
+  5: 'epic',
+  6: 'legendary',
+  7: 'questitem',
+};
 
 const ContextMenu = ({ position, options, onClose }) => {
     const [submenuPosition, setSubmenuPosition] = useState(null);
@@ -59,43 +69,16 @@ const ContextMenu = ({ position, options, onClose }) => {
       </div>
     );
   };
-  
 
-
-
-const Item = ({ name, description, value, image, onRightClick }) => {
-
-    // if item is not provided, use a default image
-    if (!image) {
-        image = 'https://www.dndbeyond.com/attachments/2/741/potion.jpg';
-    }
-
-    return (
-      <div className="item-container"
-      
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onRightClick(e);
-      }}
-      
-      >
-        <img src={image} alt={name} className="item-image" />
-        <div className="item-content">
-            <div className="item-name">{name}</div>
-            <div className="item-description">{description}</div>
-            <div className="item-value">{`${value}GP`}</div>
-        </div>
-      </div>
-    );
-};
-
-
-const Inventory = ({ items, players, isDMView, deleteItem }) => {
+const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem }) => {
   const [sortType, setSortType] = useState('id');
   const [contextMenu, setContextMenu] = useState(null);
 
   if (!deleteItem)
     deleteItem = (item) => console.log('DeleteItem not implemented: ', item);
+
+  if (!giveItem)
+    giveItem = (player, item) => console.log('GiveItem not implemented: ', player, item);
 
   const sortedItems = [...items].sort((a, b) => {
     if (sortType === 'name') {
@@ -135,8 +118,20 @@ const Inventory = ({ items, players, isDMView, deleteItem }) => {
     setContextMenu(null);
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    console.log(e, e.dataTransfer.getData('id'));
+    const itemId = e.dataTransfer.getData('id');
+    giveItem(id, itemId);
+  };
+
+
   return (
-    <div className="inventory-container">
+    <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
       <div className="inventory-header">
         <h2>Inventory</h2>
         <div className='sort-div'>
@@ -151,11 +146,14 @@ const Inventory = ({ items, players, isDMView, deleteItem }) => {
       <div className="inventory-list">
         {sortedItems.map(item => (
           <Item
-            key={item.id}
+            id={item.id}
             name={item.name}
             description={item.description}
             value={item.value}
             image={item.img}
+            type={item.type}
+            count={item.count}
+            rarity={rarityNames[item.rarity]}
             onRightClick={(e) => handleRightClick(e, item)}
           />
         ))}

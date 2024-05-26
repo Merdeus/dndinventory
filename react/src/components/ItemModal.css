@@ -1,79 +1,85 @@
-/* NewItemModal.css */
+/* ItemModal.css */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .modal {
-    background: #333;
-    padding: 20px;
-    border-radius: 10px;
-    width: 400px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .modal h2 {
-    margin-top: 0;
-  }
-  
-  .ItemModalLabel {
-    display: flex;
-    margin-bottom: 8px;
-    flex-direction: column;
-  }
-  
-  .input,
-  .textarea,
-  select {
-    flex-direction: column;
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #555;
-    color: #fdfdfd;
-    margin-top: 12px;
-    
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .ItemModalTextArea {
-    height: 100px;
-  }
-  
-  .image-selection {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  
-  .image-option {
-    width: 60px;
-    height: 60px;
-    border: 2px solid transparent;
-    cursor: pointer;
-  }
-  
-  .image-option.selected {
-    border: 2px solid #007bff;
-  }
-  
-  .modal-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 15px;
-  }
-  
-  .modal-buttons button {
-    padding: 8px 16px;
-    background-color: #555;
-    color: #fdfdfd;
-  }
-  
+.modal {
+  background: #333;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal div{
+  margin-top: 12px;
+}
+
+.item-modal-last {
+  margin-bottom: 25px;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.ItemModalLabel {
+  display: flex;
+  margin-bottom: 8px;
+  flex-direction: column;
+}
+
+.input,
+.textarea,
+select {
+  flex-direction: column;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #555;
+  color: #fdfdfd;
+  margin-top: 12px;
+}
+
+.ItemModalTextArea {
+  height: 100px;
+}
+
+.image-selection {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.image-option {
+  width: 60px;
+  height: 60px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.image-option.selected {
+  border: 2px solid #007bff;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  background-color: #555;
+  color: #fdfdfd;
+}
