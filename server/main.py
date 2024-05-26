@@ -19,7 +19,7 @@ import websockets.exceptions
 
 import logging
 import sqlalchemy
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -67,14 +67,16 @@ class ItemRarity(Enum): # not use auto()
     UNCOMMON = 2
     RARE = 3
     VERY_RARE = 4
-    LEGENDARY = 5
-    QUEST_ITEM = 6
+    EPIC = 5
+    LEGENDARY = 6
+    QUEST_ITEM = 7
 
 item_rarity_names = {
     ItemRarity.COMMON: "Common",
     ItemRarity.UNCOMMON: "Uncommon",
     ItemRarity.RARE: "Rare",
     ItemRarity.VERY_RARE: "Very Rare",
+    ItemRarity.EPIC: "Epic",
     ItemRarity.LEGENDARY: "Legendary",
     ItemRarity.QUEST_ITEM: "Quest Item",
 }
@@ -145,16 +147,19 @@ class Item(Base):
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True)
-    id_prefab = Column(Integer)
+    id_prefab = Column(Integer, ForeignKey('item_prefabs.id'), nullable=False)
     type = Column(Integer)
     name = Column(String)
     rarity = Column(Integer)
     description = Column(String)
     value = Column(Integer)
     img = Column(String)
-    count = Column(Integer)
+    count = Column(Integer, default=1)
     amount = Column(Integer)
     owner = Column(Integer, ForeignKey('players.id'))
+
+    prefab = relationship("ItemPrefab", back_populates="items")
+
 
     def to_json(self):
         return {
@@ -201,6 +206,10 @@ class ItemPrefab(Base):
     description = Column(String)
     value = Column(Integer)
     img = Column(String)
+    stackable = Column(Boolean, default=False)
+    unique = Column(Boolean, default=False)
+
+    items = relationship('Item', back_populates='prefab')
 
     @staticmethod
     def getFromId(tid : int, session):
@@ -221,9 +230,12 @@ class ItemPrefab(Base):
             'id': i.id,
             'name': i.name,
             'rarity': i.rarity,
+            'type': i.type,
             'description': i.description,
             'value': i.value,
-            'img': i.img
+            'img': i.img,
+            'stackable': i.stackable,
+            'unique': i.unique
         } for i in tmp]
         session.close()
         return res
@@ -380,9 +392,13 @@ class Game(Base):
                                     'id_prefab': item.id_prefab,
                                     'name': item.name,
                                     'rarity': item.rarity,
+                                    'type': item.type,
                                     'description': item.description,
+                                    'count': item.count,
                                     'value': item.value,
-                                    'img': item.img
+                                    'img': item.img,
+                                    'stackable': item.prefab.stackable,
+                                    'unique': item.prefab.unique
                                 }
                             }
                         }
@@ -396,9 +412,13 @@ class Game(Base):
                                         'id_prefab': item.id_prefab,
                                         'name': item.name,
                                         'rarity': item.rarity,
+                                        'type': item.type,
                                         'description': item.description,
+                                        'count': item.count,
                                         'value': item.value,
-                                        'img': item.img
+                                        'img': item.img,
+                                        'stackable': item.prefab.stackable,
+                                        'unique': item.prefab.unique
                                     }
                                 }
                             }
@@ -406,6 +426,12 @@ class Game(Base):
                 await client.send(json.dumps(data))
 
         remove_disconnected_clients()
+
+    @staticmethod
+    def getAllItemsWithPrefabID(gameid : int, prefabID : int, session):
+        if session is None:
+            raise NotFoundByIDException("Game.getAllItemsWithPrefabID requires a session")
+        return session.query(Item).filter_by(id_prefab=prefabID).all()
 
 
 class Shop(Base):
@@ -452,9 +478,13 @@ class Client:
             'id_prefab': i.id_prefab,
             'name': i.name,
             'rarity': i.rarity,
+            'type': i.type,
             'description': i.description,
+            'count': i.count,
             'value': i.value,
-            'img': i.img
+            'img': i.img,
+            'stackable': i.prefab.stackable,
+            'unique': i.prefab.unique
         } for i in tmp]
         session.close()
         return res
@@ -481,9 +511,13 @@ class Client:
                         'id_prefab': i.id_prefab,
                         'name': i.name,
                         'rarity': i.rarity,
+                        'type': i.type,
                         'description': i.description,
+                        'count': i.count,
                         'value': i.value,
-                        'img': i.img
+                        'img': i.img,
+                        'stackable': i.prefab.stackable,
+                        'unique': i.prefab.unique
                     }
 
                 # Add the player's inventory to the all_inventories dictionary
@@ -530,7 +564,7 @@ class Client:
         log(message)
         return True, message
 
-    def SendItem(self, item : Item, toSentplayer : int, session) -> (bool, str):
+    def SendItem(self, item : Item, toSentplayer : int, session) -> (bool, string):
         # maybe check if both players are part of the same game?
         if not self.isDM and not item.isPlayerOwner(self.playerid):
             return False, f"You don't own this item!"
@@ -661,14 +695,15 @@ class Client:
                                 player_id = msg["player_id"]
                                 ply = Player.getFromId(player_id, session)
                                 item_prefab = ItemPrefab.getFromId(item_id, session)
-                                tmp = give_player_item(ply, item_prefab, session)
+                                tmp, msg = give_player_item(self.gameid, ply, item_prefab, session)
                                 if not tmp:
                                     await self.send(json.dumps({
                                         "type": "error",
-                                        "msg": "An error occured while trying to give a player item!"
+                                        "msg": f"An error occured while trying to give a player item! | {msg}"
                                     }))
                                     continue
                                 if type(tmp) == Item:
+                                    print("GiveItem sync", tmp, tmp.id)
                                     await Game.syncPlayerItem(self.gameid, tmp)
 
                             except KeyError as e:
@@ -696,7 +731,15 @@ class Client:
                             try:
 
                                 newItem = msg["item"]
-                                create_new_item(newItem["name"], newItem["description"], newItem["value"], newItem["image"], int(newItem["rarity"]), int(newItem["itemType"]))
+                                print("AddItem: ", newItem)
+                                create_new_item(newItem["name"],
+                                                newItem["description"],
+                                                newItem["value"],
+                                                newItem["image"],
+                                                int(newItem["rarity"]),
+                                                int(newItem["itemType"]),
+                                                bool(newItem["isUnique"]),
+                                                bool(newItem["isStackable"]))
                                 await Game.updateItemList(self.gameid)
 
                             except KeyError as e:
@@ -822,10 +865,10 @@ def syncPlayer(player) -> None:
     # additionally give dm sync of this player
     pass
 
-def give_player_item(player, item : ItemPrefab, session = None) -> Item | bool:
+def give_player_item(gameid, player, item : ItemPrefab, session = None) -> (Item | bool, str | None):
     if player is None or item is None:
         logErrorAndNotify("Player or item is None. Aborting giving player a item.")
-        return False
+        return False, "Malformed Request"
 
     notSession = session is None
     if notSession:
@@ -833,7 +876,12 @@ def give_player_item(player, item : ItemPrefab, session = None) -> Item | bool:
 
     curItem = session.query(Item).filter_by(id_prefab=item.id, owner=player.id).first()
     newItem = None
-    if curItem is None:
+
+    if item.unique:
+        if len(Game.getAllItemsWithPrefabID(gameid, item.id, session)) > 0:
+            return False, "This item is unique and is already is in an inventory."
+
+    if curItem is None or not curItem.prefab.stackable:
         newItem = Item(
             id_prefab = item.id,
             type = item.type,
@@ -852,8 +900,8 @@ def give_player_item(player, item : ItemPrefab, session = None) -> Item | bool:
 
     if notSession:
         session.close()
-        return True
-    return curItem or newItem
+        return True, "Player received Item succesfully"
+    return newItem or curItem, "Player received Item succesfully"
 
 
 def take_player_item(player, item : Item, session = None) -> bool:
@@ -877,7 +925,7 @@ def take_player_item(player, item : Item, session = None) -> bool:
     if notSession:
         session.close()
 
-def create_new_item(name : str, description: str, value : int, img : str, rarity: int, itype: int) -> bool:
+def create_new_item(name : str, description: str, value : int, img : str, rarity: int, itype: int, unique : bool = False, stackable : bool = False) -> bool:
     if name is None or description is None or value is None:
         return False
 
@@ -889,6 +937,8 @@ def create_new_item(name : str, description: str, value : int, img : str, rarity
         rarity=rarity,
         type=itype,
         img=img,
+        stackable=stackable,
+        unique=unique
     ))
     session.commit()
     log(f"Item {name} [ID: {name}] has been created", session=session)
