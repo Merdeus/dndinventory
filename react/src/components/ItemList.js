@@ -3,8 +3,10 @@ import { useWebSocket } from './WebSocketContext';
 import ItemModal from './ItemModal';
 import './ItemList.css';
 import Item from './Item';
+import ItemDetailModal from './ItemDetailModal';
 
 const rarityNames = {
+  0: 'mundane',
   1: 'common',
   2: 'uncommon',
   3: 'rare',
@@ -22,7 +24,12 @@ const typeNames = {
   5: 'Consumable',
   6: 'Magical Item',
   7: 'Valuable',
-  8: '',
+  8: 'Scroll',
+  9: 'Shield',
+  10: 'Ring',
+  11: 'Staff',
+  12: 'Miscellaneous',
+  13: 'Wondrous Item',
 }
 
 const ContextMenu = ({ position, options, onClose }) => {
@@ -94,12 +101,15 @@ const ItemList = ({ items, players }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const webSocketService = useWebSocket();
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
+
+  // Add Item
   const handleAddNewItem = () => {
     setIsModalOpen(true);
   };
@@ -115,6 +125,7 @@ const ItemList = ({ items, players }) => {
 
   };
 
+  // Edit Item
   const handleEditItem = (item) => {
     setEditItem(item);
   };
@@ -129,6 +140,11 @@ const ItemList = ({ items, players }) => {
     setEditItem(null);
   }
   
+
+  const handleItemClick = (item) => {
+    console.log('Item clicked:', item);
+    setSelectedItem(item);
+  };
 
   const sortedItems = [...items]
     .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -219,6 +235,8 @@ const ItemList = ({ items, players }) => {
             rarity={rarityNames[item.rarity]}
             isDraggable={true}
             onRightClick={(e) => handleRightClick(e, item)}
+            onClick={() => handleItemClick(item)}
+            smaller={true}
           />
         ))}
       </div>
@@ -244,6 +262,13 @@ const ItemList = ({ items, players }) => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveNewItem}
       />
+
+      <ItemDetailModal
+        isOpen={!!selectedItem} // Add this line
+        item={selectedItem} // Add this line
+        onClose={() => setSelectedItem(null)} // Add this line
+      />
+
     </div>
   );
 };

@@ -1,0 +1,110 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+  }
+  
+  .item-detail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .item-detail-modal {
+    background: rgb(65, 65, 65);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  
+  .item-detail-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  
+  .item-detail-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .item-detail-modal-content {
+    overflow-y: auto;
+    flex-grow: 1;
+    margin-top: 5px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+  
+  .item-detail-modal-content::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+  
+  .item-detail-modal-name {
+    margin: 0;
+    font-size: 24px;
+  }
+  
+  .item-detail-modal-rarity {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+  
+  .item-detail-modal-type,
+  .item-detail-modal-description,
+  .item-detail-modal-value,
+  .item-detail-modal-count {
+    margin: 12px 0;
+  }
+  
+  .item-detail-modal-type,
+  .item-detail-modal-description {
+    margin-bottom: 0px;
+  }
+  
+  .item-detail-modal-description {
+    white-space: pre-wrap;
+    margin: 5px 0;
+    font-style: italic;
+  }
+  
+  .item-detail-modal-img-titel {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .item-detail-modal-image {
+    width: 70px;
+    height: auto;
+    border-radius: 8px;
+  }
+  
+  .item-detail-modal-name {
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  

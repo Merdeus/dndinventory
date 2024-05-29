@@ -3,6 +3,7 @@ import './Inventory.css';
 import Item from './Item';
 
 const rarityNames = {
+  0: 'mundane',
   1: 'common',
   2: 'uncommon',
   3: 'rare',
@@ -11,6 +12,22 @@ const rarityNames = {
   6: 'legendary',
   7: 'questitem',
 };
+
+const typeNames = {
+  1: 'Weapon',
+  2: 'Armor',
+  3: 'Adventure Gear',
+  4: 'Tool',
+  5: 'Consumable',
+  6: 'Magical Item',
+  7: 'Valuable',
+  8: 'Scroll',
+  9: 'Shield',
+  10: 'Ring',
+  11: 'Staff',
+  12: 'Miscellaneous',
+  13: 'Wondrous Item',
+}
 
 const ContextMenu = ({ position, options, onClose }) => {
     const [submenuPosition, setSubmenuPosition] = useState(null);

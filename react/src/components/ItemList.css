@@ -1,183 +1,203 @@
+/* Updated styles for .inventory-container */
 .inventory-container {
-    background-color: #202020;
-    border-radius: 10px;
-    padding: 20px;
-    padding-top: 10px;
-    height: 80vh;
-    overflow-y: auto;
-    width: 750px;
-    border: 2px solid #ccbd32;
-    margin: auto;
-  }
-  
-  .inventory-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .inventory-header h2 {
-    color: #fff;
-  }
-  
-  .sort-div {
-    display: flex;
-    align-items: center;
-    margin-top: 5px;
-  }
-  
-  .sort-label {
-    color: #fff;
-    margin-bottom: 5px;
-  }
-  
-  .sort-buttons {
-    display: flex;
-    justify-content: center;
-    margin-left: 5px;
-    margin-bottom: 5px;
-  }
-  
-  .sort-buttons button {
-    margin: 0 5px;
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #555;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .sort-buttons button:hover {
-    background-color: #ccbd32;
-    color: #000;
-  }
-  
-  .sort-buttons .selected {
-    background-color: #ccbd32;
-    color: #000;
-  }
-  
-  .inventory-search-add {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-    background-color: '#555';
-  }
-  
-  .search-input {
-    flex: 1;
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    background-color: '#555';
-    margin-right: 10px;
-  }
-  
-  .add-item-button {
-    background-color: rgb(5, 167, 5);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-  }
-  
-  .add-item-button:hover {
-    background-color: rgb(7, 199, 7);
-  }
-  
-  .inventory-list {
-    display: flex;
-    flex-direction: column;
-  }
-    
-  .context-menu {
-    position: absolute;
-    background-color: #444;
-    color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    z-index: 1000;
-    padding: 5px;
-    width: 100px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
-  }
-  
-  .context-menu-item {
-    padding: 5px 10px;
-    height: 20px;
-    cursor: pointer;
-  }
-  
-  .context-menu-item:hover {
-    background-color: #555;
-  }
-  
-  .context-menu.submenu {
-    position: absolute;
-    top: 0;
-  }
-  
-  /* New styles for the button panel */
-  .button-panel {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  
-  .panel-button {
-    background-color: #555;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 15px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    flex: 1;
-    margin-right: 10px;
-  }
-  
-  .panel-button:last-child {
-    margin-right: 0;
-  }
-  
-  .panel-button:hover {
-    background-color: #ccbd32;
-    color: #000;
-  }
-  
-  .filter-buttons {
-    display: flex;
-    justify-content: center;
-    margin-left: 5px;
-    margin-bottom: 5px;
-  }
-  
-  .filter-buttons button {
-    margin: 0 5px;
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    margin-right: 25px;
-    background-color: #555;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .filter-buttons button:hover {
-    background-color: #ccbd32;
-    color: #000;
-  }
-  
-  .filter-buttons .selected {
-    background-color: #ccbd32;
-    color: #000;
-  }
+  background-color: #202020;
+  border-radius: 10px;
+  padding: 20px;
+  padding-top: 10px;
+  height: 80vh;
+  overflow: hidden; /* Hide the outer scrollbar */
+  width: 750px;
+  border: 2px solid #ccbd32;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background-color: #202020;
+  z-index: 2;
+  padding-bottom: 10px;
+}
+
+.inventory-header h2 {
+  color: #fff;
+}
+
+.sort-div {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.sort-label {
+  color: #fff;
+  margin-bottom: 5px;
+}
+
+.sort-buttons {
+  display: flex;
+  justify-content: center;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.sort-buttons button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #555;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sort-buttons button:hover {
+  background-color: #ccbd32;
+  color: #000;
+}
+
+.sort-buttons .selected {
+  background-color: #ccbd32;
+  color: #000;
+}
+
+.inventory-search-add {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  background-color: '#555';
+  position: sticky;
+  top: 50px;
+  background-color: #202020;
+  z-index: 1;
+}
+
+.search-input {
+  flex: 1;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: '#555';
+  margin-right: 10px;
+}
+
+.add-item-button {
+  background-color: rgb(5, 167, 5);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.add-item-button:hover {
+  background-color: rgb(7, 199, 7);
+}
+
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll; /* Make the list scrollable */
+  flex-grow: 1;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+}
+
+.inventory-list::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+.context-menu {
+  position: absolute;
+  background-color: #444;
+  color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  z-index: 1000;
+  padding: 5px;
+  width: 100px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.context-menu-item {
+  padding: 5px 10px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.context-menu-item:hover {
+  background-color: #555;
+}
+
+.context-menu.submenu {
+  position: absolute;
+  top: 0;
+}
+
+/* New styles for the button panel */
+.button-panel {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.panel-button {
+  background-color: #555;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.panel-button:last-child {
+  margin-right: 0;
+}
+
+.panel-button:hover {
+  background-color: #ccbd32;
+  color: #000;
+}
+
+.filter-buttons {
+  display: flex;
+  justify-content: center;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.filter-buttons button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  margin-right: 25px;
+  background-color: #555;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.filter-buttons button:hover {
+  background-color: #ccbd32;
+  color: #000;
+}
+
+.filter-buttons .selected {
+  background-color: #ccbd32;
+  color: #000;
+}

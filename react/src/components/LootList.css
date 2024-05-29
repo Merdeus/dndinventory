@@ -4,7 +4,6 @@
     padding: 20px;
     padding-top: 10px;
     height: 80vh;
-    overflow-y: auto;
     width: 750px;
     border: 2px solid #ccbd32;
     margin: auto;
@@ -94,6 +93,7 @@
   .inventory-list {
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
   }
   
   .item-container {
@@ -102,7 +102,7 @@
     padding: 10px;
     margin: 6px 0;
     margin-bottom: 2px;
-    background-color: #444;
+
     border-radius: 8px;
     color: #fff;
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
@@ -110,7 +110,7 @@
   }
   
   .item-container:hover {
-    transform: translateX(-4px);
+    background-color: #5c5c5c;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   }
   

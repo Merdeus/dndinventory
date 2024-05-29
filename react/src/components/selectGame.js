@@ -13,7 +13,7 @@ const SelectGame = () => {
   const createSession = (tab) => {
     const { gameName, gameDescription, gamePW, creationCode } = tab;
     console.log("Creating session for game: ", gameName);
-    const protocolUse = process.env.REACT_APP_USE_WS_ENV ? "ws" : "wss";
+    const protocolUse = process.env.REACT_APP_USE_WS_ENV && process.env.REACT_APP_USE_WS_ENV == 1 ? "ws" : "wss";
     console.log("Using protocol: " + protocolUse, process.env.REACT_APP_USE_WS_ENV)
     const domain = window.location.hostname;
     webSocketService.connect(protocolUse + '://' + domain + ':8273', () => {
@@ -33,7 +33,7 @@ const SelectGame = () => {
   const joinSession = (joinCode) => {
     console.log("Joining session with ID: " + joinCode);
 
-    const protocolUse = process.env.REACT_APP_USE_WS_ENV ? "ws" : "wss";
+    const protocolUse = process.env.REACT_APP_USE_WS_ENV && process.env.REACT_APP_USE_WS_ENV == 1 ? "ws" : "wss";
     console.log("Using protocol: " + protocolUse, process.env.REACT_APP_USE_WS_ENV)
     const domain = window.location.hostname;
     webSocketService.connect(protocolUse + '://' + domain + ':8273', () => {

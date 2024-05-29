@@ -5,7 +5,6 @@ from xmlrpc.client import Boolean
 from dotenv import load_dotenv
 from sqlalchemy.ext.hybrid import hybrid_property
 
-print("Welcome to the DnD-Inventory backend!!")
 
 import json
 import uuid
@@ -64,6 +63,7 @@ loglevel_prefixes = {
 }
 
 class ItemRarity(Enum): # not use auto()
+    MUNDANE = 0
     COMMON = 1
     UNCOMMON = 2
     RARE = 3
@@ -90,6 +90,12 @@ class ItemType(Enum):
     CONSUMABLE = 5
     MAGICAL_ITEM = 6
     VALUABLE = 7
+    SCROLL = 8
+    SHIELD = 9
+    RING = 10
+    STAFF = 11
+    MISC = 12
+    WONDROUS = 13
 
 item_type_names = {
     ItemType.WEAPON: "Weapon",
@@ -198,7 +204,7 @@ class Item(Base):
             return player == self.owner
 
     def isQuestItem(self):
-        return self.rarity == ItemRarity.QUEST_ITEM
+        return self.rarity == ItemRarity.QUEST_ITEM.value
 
     @staticmethod
     def getFromId(tid : int, session):
@@ -1173,27 +1179,34 @@ async def newserver(websocket, path):
 
 
 
-certificate_path = os.getenv("SSL_CERTIFICATE")
-privatekey_path = os.getenv("SSL_PRIVATE_KEY")
 
-ssl_context = None
 
-if certificate_path is not None and privatekey_path is not None:
-    # creating ssl context for secure connection (wss instead of ws)
+
+# only start if main is the one that is executed
+if __name__ == "__main__":
+    print("Welcome to the DnD-Inventory backend!!")
+
+    certificate_path = os.getenv("SSL_CERTIFICATE")
+    privatekey_path = os.getenv("SSL_PRIVATE_KEY")
+
+    ssl_context = None
+
+    if certificate_path is not None and privatekey_path is not None:
+        # creating ssl context for secure connection (wss instead of ws)
+        try:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+            ssl_context.load_cert_chain(certfile=certificate_path, keyfile=privatekey_path)
+        except FileNotFoundError:
+            ssl_context = None
+            print("Certificate file not found")
+    else:
+        print("No SSL certificate provided")
+
+    # create websocket server
+    start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None, ssl=ssl_context)
+    asyncio.get_event_loop().run_until_complete(start_server)
+
     try:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        ssl_context.load_cert_chain(certfile=certificate_path, keyfile=privatekey_path)
-    except FileNotFoundError:
-        ssl_context = None
-        print("Certificate file not found")
-else:
-    print("No SSL certificate provided")
-
-# create websocket server
-start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None, ssl=ssl_context)
-asyncio.get_event_loop().run_until_complete(start_server)
-
-try:
-    asyncio.get_event_loop().run_forever()
-except KeyboardInterrupt:
-    print("Shutting down...")
+        asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        print("Shutting down...")
