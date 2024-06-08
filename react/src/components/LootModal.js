@@ -62,7 +62,7 @@ const presetLootList = {
 
 const LootModal = ({ onClose, onSubmit }) => {
   const [lootType, setLootType] = useState("Common");
-  const [generatedItems, setGeneratedItems] = useState([]);
+
   const [counts, setCounts] = useState({
     common: 0,
     uncommon: 0,
@@ -71,14 +71,15 @@ const LootModal = ({ onClose, onSubmit }) => {
     epic: 0,
     legendary: 0
   });
+  const [uniqueAllowed, setUniqueAllowed] = useState(false);
+
 
   const handleLootTypeChange = (event) => {
     setCounts(presetLootList[event.target.value]);
   };
 
   const handleSubmit = () => {
-    onSubmit(generatedItems);
-    onClose();
+    onSubmit(counts);
   };
 
   return (
@@ -154,6 +155,14 @@ const LootModal = ({ onClose, onSubmit }) => {
                     />
                     </div>
 
+                    <div className="lootmodal-last-middle-row">
+                    Allow Unique Items:
+                    <input
+                        type="checkbox"
+                        checked={uniqueAllowed}
+                        onChange={(e) => setUniqueAllowed(e.target.checked)}
+                    />
+                    </div>
                 </div>
                 <div className="lootmodal-button-row">
                     <div className="lootmodal-submit-button" onClick={handleSubmit}>Submit</div>

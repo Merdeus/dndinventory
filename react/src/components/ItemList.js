@@ -198,7 +198,7 @@ const ItemList = ({ items, players }) => {
   return (
     <div className="inventory-container">
       <div className="inventory-header">
-        <h2>Items</h2>
+        <h2>Items {`(${sortedItems.length})`}</h2>
 
         <div className='sort-div'>
           <div className="sort-label">Sort by:</div>
@@ -264,9 +264,9 @@ const ItemList = ({ items, players }) => {
       />
 
       <ItemDetailModal
-        isOpen={!!selectedItem} // Add this line
-        item={selectedItem} // Add this line
-        onClose={() => setSelectedItem(null)} // Add this line
+        isOpen={!!selectedItem}
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
       />
 
     </div>

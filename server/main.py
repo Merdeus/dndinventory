@@ -4,12 +4,14 @@ from typing import List, Type
 from xmlrpc.client import Boolean
 from dotenv import load_dotenv
 from sqlalchemy.ext.hybrid import hybrid_property
-
+import threading
+import subprocess
 
 import json
 import uuid
 import asyncio
 import datetime
+import time
 import random
 import websockets
 import string
@@ -22,6 +24,11 @@ import sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+import base64
 
 load_dotenv()
 
@@ -37,6 +44,8 @@ sockets = []
 games = {}
 clientList = []
 clients_to_remove = []
+
+last_imports = {}
 
 def remove_disconnected_clients():
     for client in clients_to_remove:
@@ -107,6 +116,27 @@ item_type_names = {
     ItemType.VALUABLE: "Valuable",
 }
 
+global_sync_token_key = os.getenv("SYNC_TOKEN_KEY")
+if global_sync_token_key is None:
+    global_sync_token_key = "NotReallySecure"
+
+def _encrypt(data, key):
+    key = key.ljust(32)[:32].encode('utf-8')
+    iv = get_random_bytes(AES.block_size)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    padded_data = pad(data.encode('utf-8'), AES.block_size)
+    encrypted_data = cipher.encrypt(padded_data)
+    encrypted_message = iv + encrypted_data
+    return base64.b64encode(encrypted_message).decode('utf-8')
+
+def _decrypt(encrypted_data, key):
+    key = key.ljust(32)[:32].encode('utf-8')
+    encrypted_data = base64.b64decode(encrypted_data)
+    iv = encrypted_data[:AES.block_size]
+    encrypted_message = encrypted_data[AES.block_size:]
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted_data = unpad(cipher.decrypt(encrypted_message), AES.block_size)
+    return decrypted_data.decode('utf-8')
 
 class History(Base):
     __tablename__ = 'history'
@@ -144,12 +174,7 @@ class Player(Base):
             'game_id': self.game_id
         }
 
-
-
 # items owned by a player
-
-
-
 class Item(Base):
     __tablename__ = 'items'
 
@@ -230,6 +255,7 @@ class ItemPrefab(Base):
     description = Column(String)
     value = Column(Integer)
     img = Column(String)
+    gameid = Column(Integer, ForeignKey('games.id'))
     stackable = Column(Boolean, default=False)
     unique = Column(Boolean, default=False)
 
@@ -246,9 +272,9 @@ class ItemPrefab(Base):
             return tmp
 
     @staticmethod
-    def getList():
+    def getList(gameid : int):
         session = Session()
-        tmp = session.query(ItemPrefab).all()
+        tmp = session.query(ItemPrefab).filter_by(gameid=gameid).all()
         res = [
         {
             'id': i.id,
@@ -275,6 +301,115 @@ class GameSettings(Base):
 
     shop_id = Column(Integer, ForeignKey('shops.id'))
     shop = relationship("Shop")
+
+class LootPool:
+    _instances = []
+
+    def __init__(self, gameid):
+        self.gameid = gameid
+        self.loot : list[tuple[int,int]] = []
+        self.gold = 0
+        self.players = []
+        self.nextLootId = 1
+        self.__class__._instances.append(self)
+
+    def __del__(self):
+        try:
+            self.__class__._instances.remove(self)
+        except ValueError:
+            pass
+
+    def addLoot(self, itemid : int):
+        self.loot.append((itemid, self.nextLootId))
+        self.nextLootId += 1
+
+    def removeLoot(self, loot_id : int):
+        print("Removing loot")
+        print(self.loot)
+        self.loot = [i for i in self.loot if i[1] != loot_id]
+        print(self.loot)
+
+    def getLoot(self):
+        session = Session()
+        loot_list = []
+        try:
+            for tmp in self.loot:
+                item = ItemPrefab.getFromId(tmp[0], session)
+                loot_list.append({
+                    'id': item.id,
+                    'lootid': tmp[1],
+                    'name': item.name,
+                    'rarity': item.rarity,
+                    'type': item.type,
+                    'description': item.description,
+                    'value': item.value,
+                    'img': item.img,
+                    'stackable': item.stackable,
+                    'unique': item.unique
+                })
+        finally:
+            session.close()
+        return loot_list
+
+    def generateRandomLoot(self, countList):
+        rarity_map = {
+            'common': ItemRarity.COMMON,
+            'uncommon': ItemRarity.UNCOMMON,
+            'rare': ItemRarity.RARE,
+            'veryRare': ItemRarity.VERY_RARE,
+            'epic': ItemRarity.EPIC,
+            'legendary': ItemRarity.LEGENDARY
+        }
+
+        session = Session()
+        try:
+            for rarity_str, rarity_enum in rarity_map.items():
+                count = countList.get(rarity_str, 0)
+                if count > 0:
+                    items = session.query(ItemPrefab).filter_by(gameid=self.gameid, rarity=rarity_enum.value).all()
+                    for _ in range(count):
+                        if items:
+                            item = random.choice(items)
+                            self.addLoot(item.id)
+        finally:
+            session.close()
+
+    async def sendLootList(self, sendToAll=False):
+        global clientList
+        to_send_list = {
+            "type": "loot_list_update",
+            "msg": {
+                "items": self.getLoot(),
+                "gold": self.gold,
+                "players": self.players
+            }
+        }
+        for client in clientList:
+            if client.gameid != self.gameid:
+                continue
+            await client.send(json.dumps(to_send_list))
+        remove_disconnected_clients()
+    
+    @classmethod
+    def get_all_instances(cls):
+        return cls._instances
+
+    @classmethod
+    def find_by_gameid(cls, gameid):
+        return next((instance for instance in cls._instances if instance.gameid == gameid), None)
+
+    @classmethod
+    def create_new_lootpool(cls, gameid):
+        existing = cls.find_by_gameid(gameid)
+        if existing:
+            return existing
+        return cls(gameid)
+
+    @classmethod
+    def delete_by_gameid(cls, gameid):
+        instance = cls.find_by_gameid(gameid)
+        if instance:
+            cls._instances.remove(instance)
 
 
 class Game(Base):
@@ -486,12 +621,45 @@ class ShopItem(Base):
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+
+def run_import_script(gameid, send_callback):
+    async def async_run():
+        try:
+            from fetchItems import importDnDItems
+            importDnDItems(gameid)
+            await send_callback(json.dumps({
+                "type": "items_imported",
+                "success": True
+            }))
+        except Exception as e:
+            print("ImportNewItems Error:", e)
+            await send_callback(json.dumps({
+                "type": "items_imported",
+                "success": False
+            }))
+            await send_callback(json.dumps({
+                "type": "error",
+                "msg": f"ImportNewItems failed: {str(e)}"
+            }))
+        await Game.updateItemList(gameid)
+    asyncio.run(async_run())
+
 class Client:
     def __init__(self, socket, gameid, playerid, isDM=False):
         self.socket = socket
         self.gameid = gameid
         self.playerid = playerid
         self.isDM = isDM
+
+    def generateReSyncToken(self):
+        token = json.dumps({
+            "gameid": self.gameid,
+            "playerid": self.playerid,
+            "isDM": self.isDM,
+            "valid_until": round(time.time() + 14400)
+        })
+
+        return _encrypt(token, global_sync_token_key)
 
 
     def getInventory(self):
@@ -555,8 +723,6 @@ class Client:
             return all_inventories
         finally:
             session.close()
-
-
 
     def isAllowedToSell(self, item : Item) -> bool:
         if self.isDM:
@@ -638,18 +804,106 @@ class Client:
         await self.send(json.dumps({
             "type": "game_info",
             "msg": {
-                "itemlist": ItemPrefab.getList()
+                "itemlist": ItemPrefab.getList(self.gameid)
             }
         }))
 
     async def process(self):
         try:
+
+            await self.send(json.dumps({
+                "type": "sync_token",
+                "msg": self.generateReSyncToken()
+            }))
+
             async for msg in self.socket:
                 msg = json.loads(msg)
 
                 print(f"# New Message: {msg['type']}")
                 try:
                     match msg["type"]:
+
+                        case "AddLootItem":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            item_id = msg["item_id"]
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            currentLootPool.addLoot(item_id)
+                            await currentLootPool.sendLootList()
+
+                        case "RemoveLootItem":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            loot_id = msg["loot_id"]
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            currentLootPool.removeLoot(loot_id)
+                            await currentLootPool.sendLootList()
+
+                        case "GenerateLootItems":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            countList = msg["count_list"]
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            currentLootPool.generateRandomLoot(countList)
+                            await currentLootPool.sendLootList()
+
+                        case "SetLootGold":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            currentLootPool.gold = msg["loot_gold"]
+                            await currentLootPool.sendLootList()
+
+
+                        case "ClearLoot":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+                            LootPool.delete_by_gameid(self.gameid)
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            await currentLootPool.sendLootList()
+
+                        case "DistributeLoot":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            currentLootPool = LootPool.find_by_gameid(self.gameid)
+                            if not currentLootPool:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "There is no active lootpool"
+                                }))
+                                continue
+
+                            selected_players = msg["players"]
+
+
                         case "SellItem":
                             item_id = msg["item_id"]
                             session = Session()
@@ -784,6 +1038,7 @@ class Client:
                                                 newItem["image"],
                                                 int(newItem["rarity"]),
                                                 int(newItem["itemType"]),
+                                                self.gameid,
                                                 bool(newItem["isUnique"]),
                                                 bool(newItem["isStackable"]))
                                 await Game.updateItemList(self.gameid)
@@ -802,6 +1057,40 @@ class Client:
                                     "msg": f"Invalid GiveItem message | {e}"
                                 }))
 
+                        case "ImportNewItems":
+                            if not self.isDM:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Illegal operation"
+                                }))
+                                return
+
+                            # cooldown
+                            global last_imports
+                            print("ImportNewItems: ", last_imports, self.socket.remote_address[0] in last_imports)
+                            if self.socket.remote_address[0] in last_imports:
+                                if last_imports[self.socket.remote_address[0]] > (time.time() - 600):
+                                    await self.send(json.dumps({
+                                        "type": "error",
+                                        "msg": "Import cooldown. Chill!"
+                                    }))
+                                    await self.send(json.dumps({
+                                        "type": "items_imported",
+                                        "success": False
+                                    }))
+                                    continue
+                            last_imports[self.socket.remote_address[0]] = time.time()
+
+                            # ignore which kind of items you actually want to import because there currently is only dnd items
+                            try:
+                                threading.Thread(target=run_import_script, args=(self.gameid, self.send)).start()
+
+                            except KeyError as e:
+                                print("ImportNewItems Error:", e)
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid ImportNewItems message"
+                                }))
 
                         case "CreatePlayer":
                             if not self.isDM:
@@ -989,8 +1278,7 @@ def edit_item(editItem, session) -> Item | None:
         return None
 
 
-
-def create_new_item(name : str, description: str, value : int, img : str, rarity: int, itype: int, unique : bool = False, stackable : bool = False) -> bool:
+def create_new_item(name : str, description: str, value : int, img : str, rarity: int, itype: int, gameid : int, unique : bool = False, stackable : bool = False) -> bool:
     if name is None or description is None or value is None:
         return False
 
@@ -998,6 +1286,7 @@ def create_new_item(name : str, description: str, value : int, img : str, rarity
     session.add(ItemPrefab(
         name=name,
         description=description,
+        gameid=gameid,
         value=value,
         rarity=rarity,
         type=itype,
@@ -1051,8 +1340,30 @@ def createNewGame(name: str, description: str, dm_pass: str):
     session.close()
     return res
 
-def joinGame():
-    pass
+
+def ValidateSyncToken(token):
+    dec_token = _decrypt(token, global_sync_token_key)
+    dec_token = json.loads(dec_token)
+    isValid = False
+    session = Session()
+    try:
+
+        Game.getFromId(dec_token["gameid"], session)
+        if not dec_token["isDM"]:
+            Player.getFromId(dec_token["playerid"], session)
+
+        if dec_token["valid_until"] < time.time():
+            print("Sync token has expired")
+        else:
+            isValid = True
+
+    except NotFoundByIDException as e:
+        print("Sync Token invalid", e)
+        pass
+
+    session.close()
+    return isValid, dec_token
+
 
 def parse_register_msg(msg):
     j = json.loads(msg)
@@ -1068,6 +1379,25 @@ async def newserver(websocket, path):
     try:
         registerMsg = parse_register_msg(await websocket.recv())
         match registerMsg["action"]:
+            case "resync":
+                token = registerMsg["sync_token"]
+                isValid, token = ValidateSyncToken(token)
+                if not isValid:
+                    error = {
+                        "type": "error",
+                        "msg": "Invalid sync token. You have to join manually"
+                    }
+                    await websocket.send(json.dumps(error))
+
+                newClient = Client(websocket, token["gameid"], None if token["isDM"] else token["playerid"], token["isDM"])
+                clientList.append(newClient)
+                await newClient.sendGameInfo()
+                if token["isDM"]:
+                    await newClient.sendItemList()
+                currentLootPool = LootPool.create_new_lootpool(token["gameid"])
+                await currentLootPool.sendLootList()
+                await newClient.process()
+
             case "createSession":
                 tvars = registerMsg["create"]
                 print(tvars, tvars["name"], tvars["description"], tvars["dm_pass"])
@@ -1141,9 +1471,11 @@ async def newserver(websocket, path):
                                 return
 
                         try:
-                            ply = Player.getFromId(playerToSelect)
+                            session = Session()
+                            ply = Player.getFromId(playerToSelect, session)
                             newClient = Client(websocket, game.id, ply.id, False)
                             clientList.append(newClient)
+                            session.close()
                             await newClient.sendGameInfo()
                             await newClient.process()
                             return

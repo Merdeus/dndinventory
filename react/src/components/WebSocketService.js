@@ -1,4 +1,7 @@
+import React, { useEffect, useState } from 'react';
+
 class WebSocketService {
+
     constructor() {
       this.socket = null;
       this.messageHandlers = [];
@@ -6,9 +9,12 @@ class WebSocketService {
       this.closing = false;
       this.connected = false;
       this.connecting = false;
+      this.connectionAddress = null;
+      this.syncToken = null;
     }
   
     connect(url, callback) {
+
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             console.error('WebSocketService: Already connected');
             return;
@@ -19,12 +25,23 @@ class WebSocketService {
             return;
         }
 
+        this.connectionAddress = url;
+
         this.connecting = true;
         this.socket = new WebSocket(url);
         this.socket.onmessage = this.handleMessage;
         this.socket.onopen = () => {
-          this.connected=true;
+
+          if (this.retryConnecting) {
+            if (this.retryHandlingCallback) {
+              this.retryHandlingCallback(-1);
+            }
+          }
+
+          this.retryConnecting = false;
+          this.connected = true;
           this.connecting = false;
+          this.retryCount = 0;
           callback()
         };
 
@@ -35,12 +52,34 @@ class WebSocketService {
               return;
             }
 
-            this.closing = true;
-            console.log('WebSocketService: Connection closed');
-            console.log('WebSocketService: Cleaning up message handlers', this.cleanupHandlers.length);
-            this.cleanupHandlers.forEach(handler => handler.callback());
-            //this.cleanupHandlers = [];
-            console.log('WebSocketService: Cleaned up!');
+            console.log('WebSocketService: Connection broken!');
+            if (this.retryCount < 30) {
+
+              if (this.retryHandlingCallback) {
+                this.retryHandlingCallback(this.retryCount);
+              }
+
+              this.retryConnecting = true;
+              setTimeout(() => {
+                this.retryCount++;
+                this.connect(url, () => {
+                  this.sendMessage({
+                    type: "register", 
+                    action: "resync",
+                    sync_token: this.syncToken
+                  });
+                });
+              }, 5000);
+            } else {
+              this.retryConnecting = false;
+              this.closing = true;
+              console.log('WebSocketService: Connection closed');
+              console.log('WebSocketService: Cleaning up message handlers', this.cleanupHandlers.length);
+              this.cleanupHandlers.forEach(handler => handler.callback());
+              //this.cleanupHandlers = [];
+              console.log('WebSocketService: Cleaned up!');
+            }
+
         }
     }
   
@@ -50,6 +89,12 @@ class WebSocketService {
 
         console.log('WebSocketService: Received message', message);
         console.log(this.messageHandlers)
+
+        if (type === "sync_token") {
+          this.syncToken = message.msg;
+          console.log("Sync Token received: ", this.syncToken);
+          return;
+        }
 
         // Filter message handlers by type and call matching handlers
         this.messageHandlers

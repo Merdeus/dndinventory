@@ -3,8 +3,6 @@ import React, { Component } from 'react';
 import './SelectPlayer.css';
 import { RoundedBoxPage } from './RoundBoxPage';
 
-// class for player selection but only functional
-
 const SelectPlayer = ({items, callback}) => {
 
     // add Dungeon Master to the list in the beginning of the list of players, but only if it does not already exist

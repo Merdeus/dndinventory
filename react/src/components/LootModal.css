@@ -55,6 +55,9 @@
     margin-bottom: 10px;
   }
 
+  .lootmodal-item-count div.lootmodal-last-middle-row {
+    margin-top: 20px;
+  }
   
   .lootmodal-button-row {
     display: flex;

@@ -12,7 +12,12 @@ export const MatchProvider = ({ children }) => {
     game: null,
     inventory: null,
     inventories: null,
-    itemlist: []
+    itemlist: [],
+    loot: {
+      gold: 0,
+      items: [],
+      players: []
+    }
   });
 
   const updateMatchState = (newVals) => {

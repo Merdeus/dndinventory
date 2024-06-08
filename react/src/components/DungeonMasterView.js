@@ -7,6 +7,10 @@ import ItemList from './ItemList';
 import './DungeonMasterView.css';
 import PlayerList from './PlayerList';
 import LootList from './LootList';
+import GameInfoModal from './GameInfoModal';
+
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const DungeonMasterView = () => {
 
@@ -14,8 +18,71 @@ const DungeonMasterView = () => {
 	const [selectedPlayer, setSelectedPlayer] = useState("None");
   const [allowedToSell, setAllowedToSell] = useState(false);
   const [currentLeftTab, setCurrentLeftTab] = useState("Items");
+  const [currentRightTab, setCurrentRightTab] = useState("Inventories");
+
 	const { matchState, updateMatchState } = useMatch();
 	const [itemlist, setitemlist] = useState([]);
+  const [isGameInfoModalOpen, setIsGameInfoModalOpen] = useState(false); // Step 2: Define state
+  const webSocketService = useWebSocket();
+
+
+  const handleOpenGameInfoModal = () => {
+    setIsGameInfoModalOpen(true);
+  };
+
+  const handleCloseGameInfoModal = () => {
+    setIsGameInfoModalOpen(false);
+  };
+
+  const importItems = (items) => {
+    console.log("DM: Importing items:", items);
+    setIsGameInfoModalOpen(false);
+
+    if (webSocketService.messageHandlers.find(h => h.identifier === "import_items_handler")) {
+      toast.error('Already importing items!')
+      return;
+    }
+    const toastId = toast.loading('Importing items...', {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      });
+
+    webSocketService.sendMessage({
+      type: 'ImportNewItems',
+      items: items
+    });
+
+    const handler = {
+      identifier: 'import_items_handler',
+      messageType: "items_imported",
+      callback: (message) => {
+        if (message.success) {
+          toast.update(toastId, {
+            render: 'Items imported successfully!',
+            type: 'success',
+            isLoading: false,
+            autoClose: 3000
+          });
+        } else {
+          toast.update(toastId, {
+            render: 'Error importing items!',
+            type: 'error',
+            isLoading: false,
+            autoClose: 3000
+          });
+        }
+        webSocketService.removeMessageHandler(handler);
+      }
+    };
+
+    webSocketService.addMessageHandler(handler);
+  }
 
   useEffect(() => {
   
@@ -35,8 +102,17 @@ const DungeonMasterView = () => {
 
 
   useEffect(() => {
-    console.log("Players updated:", players)
-  }, [players]);
+
+    webSocketService.addMessageHandler({
+      identifier: 'dm_error_display',
+      messageType: "error",
+      callback: (message) => {
+        toast.error(message.msg, {
+          autoClose: 3000
+        });
+      }
+    });
+  }, []);
 
 
 
@@ -62,7 +138,10 @@ const DungeonMasterView = () => {
     setCurrentLeftTab(tab);
   }
 
-  const webSocketService = useWebSocket();
+  const switchRightTab = (tab) => {
+    setCurrentRightTab(tab);
+  }
+
   // setPlayerGold function
   const setPlayerGold = (player, gold) => {
     console.log("DM: New Gold value set for player:", gold, player);
@@ -75,6 +154,9 @@ const DungeonMasterView = () => {
 
   const deleteItem = (item) => {
     console.log('DM: Delete item:', item);
+    toast.info(`Deleted "${item.name}" from ${selectedPlayer}`, {
+      autoClose: 3000
+    })
     webSocketService.sendMessage({
       type: 'DeleteItem',
       item_id: item.id,
@@ -97,31 +179,63 @@ const DungeonMasterView = () => {
       <div style={styles.container}>
         <div style={styles.leftPanel}>
           <div className="button-panel">
-            <button className={allowedToSell ? "panel-button buttonBigger buttonAllowed" : "panel-button buttonBigger buttonDisallowed"} onClick={handleAllowSelling} >{allowedToSell ? "Selling allowed" : "Selling disallowed"}</button>
-            <button className={currentLeftTab === "Items" ? "panel-button buttonSmaller buttonSelected" : "panel-button buttonSmaller"} onClick={() => {switchLeftTab("Items")}}>Items</button>
-            <button className={currentLeftTab === "Shops" ? "panel-button buttonSmaller buttonSelected" : "panel-button buttonSmaller"} onClick={() => {switchLeftTab("Shops")}}>Shops</button>
-            <button className={currentLeftTab === "Loot" ? "panel-button buttonSmaller buttonSelected" : "panel-button buttonSmaller"} onClick={() => {switchLeftTab("Loot")}}>Loot</button>
-            <button className={currentLeftTab === "Players" ? "panel-button buttonSmaller buttonSelected" : "panel-button buttonSmaller"} onClick={() => {switchLeftTab("Players")}}>Players</button>
+            <button className={allowedToSell ? "panel-button buttonAllowed" : "panel-button buttonDisallowed"} onClick={handleAllowSelling} >{allowedToSell ? "Selling allowed" : "Selling disallowed"}</button>
+            <button className={currentLeftTab === "Items" ? "panel-button buttonSelected" : "panel-button"} onClick={() => {switchLeftTab("Items")}}>Items</button>
+            <button className={currentLeftTab === "Players" ? "panel-button buttonSelected" : "panel-button"} onClick={() => {switchLeftTab("Players")}}>Players</button>
+            <button className="panel-button buttonWaySmaller" onClick={handleOpenGameInfoModal}>Info</button>
           </div>
           {currentLeftTab === "Items" && <ItemList items={itemlist} players={players} />}
           {currentLeftTab === "Players" && <PlayerList players={players} setPlayerGold={setPlayerGold} />}
-          {currentLeftTab === "Loot" && <LootList players={players} items={[]} />}
+          
         </div>
         <div style={styles.rightPanel}>
           
-          <div style={styles.playerSelect}>
-          <p style={styles.ptop}>Select a players inventory</p>
-            <select value={selectedPlayer} onChange={handleSelectPlayer} style={styles.select}>
-              {(players).map(player => (
-                <option key={player.name} value={player.name}>
-                  {player.name}
-                </option>
-              ))}
-            </select>
+          <div className="button-panel">
+            <button className={currentRightTab === "Inventories" ? "panel-button buttonSelected" : "panel-button"} onClick={() => { switchRightTab("Inventories") }}>Inventories</button>
+            <button className={currentRightTab === "Shops" ? "panel-button buttonSelected" : "panel-button"} onClick={() => { switchRightTab("Shops") }}>Shops</button>
+            <button className={currentRightTab === "Loot" ? "panel-button buttonSelected" : "panel-button"} onClick={() => {switchRightTab("Loot")}}>Loot</button>
           </div>
-          {console.log("Reee  Selected player:", getSelectedPlayer())}
-          <Inventory id={getSelectedPlayer().id} items={getSelectedPlayerInventory()} players={players} isDMView={true} giveItem={giveItem} deleteItem={deleteItem} />
+          {currentRightTab === "Inventories" && (
+            <>
+              <div style={styles.playerSelect}>
+                <select value={selectedPlayer} onChange={handleSelectPlayer} style={styles.select}>
+                  {(players).map(player => (
+                    <option key={player.name} value={player.name}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Inventory
+                id={getSelectedPlayer().id}
+                items={getSelectedPlayerInventory()}
+                players={players}
+                isDMView={true}
+                giveItem={giveItem}
+                deleteItem={deleteItem}
+              />
+            </>
+          )}
+          {currentRightTab === "Loot" && <LootList items={matchState.loot.items} currentGold={matchState.loot.gold} />}
+
         </div>
+        <GameInfoModal
+            isOpen={isGameInfoModalOpen}
+            gameName={matchState.game.game.name}
+            joinCode={matchState.game.game.join_code}
+            importItems={importItems}
+            onClose={handleCloseGameInfoModal}
+          />
+          <ToastContainer
+            position="top-right"
+            autoClose={false}
+            newestOnTop={false}
+            closeOnClick={true}
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            theme="dark"
+          />
       </div>
     );
   }
@@ -135,19 +249,25 @@ const styles = {
   },
   leftPanel: {
     flex: 1,
-    borderRight: '1px solid #ccc',
+    borderRight: '2px solid #000000',
+    borderRadius: '20px 0 0 20px', // Curved border on the right side
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '30px'
+    paddingTop: '30px',
+    paddingBottom: '30px',
+    width: "47vw"
   },
   rightPanel: {
     flex: 1,
+    borderLeft: '2px solid #000000',
+    borderRadius: '0 20px 20px 0', // Curved border on the left side
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: '30px'
+    paddingTop: '30px',
+    paddingBottom: '30px',
+    width: "47vw"
   },
   playerSelect: {
     width: '100%',

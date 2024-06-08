@@ -4,6 +4,8 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px; /* Adjust as needed for spacing */
+    /* width half of screen */
+
   }
   
   .panel-button {
@@ -12,7 +14,7 @@
     border: none;
     border-radius: 5px;
     padding: 10px 15px; /* Adjust padding as needed */
-    font-size: 15px;
+    font-size: 16px;
 
     cursor: pointer;
     width: 190px;
@@ -38,6 +40,11 @@
   .buttonSmaller {
     width: 120px;
   }
+
+  .panel-button.buttonWaySmaller {
+    width: 70px;
+  }
+
 
   .buttonDisallowed {
     background-color: #b93716;

@@ -106,5 +106,38 @@
   .item-detail-modal-name {
     font-size: 1.5em;
     font-weight: bold;
+    text-shadow: 1px 2px 4px black;
   }
   
+  
+  .item-detail-modal-name.mundane {
+    color: gray;
+  }
+
+  .item-detail-modal-name.common {
+    color: lightgray;
+  }
+  
+  .item-detail-modal-name.uncommon {
+    color: green;
+  }
+  
+  .item-detail-modal-name.rare {
+    color: rgb(69, 69, 255);
+  }
+
+  .item-detail-modal-name.veryrare {
+    color: rgb(226, 95, 187);
+  }
+  
+  .item-detail-modal-name.epic {
+    color: rgb(150, 6, 150);
+  }
+  
+  .item-detail-modal-name.legendary {
+    color: gold;
+  }
+
+  .item-detail-modal-name.questitem {
+    color: orange;
+  }

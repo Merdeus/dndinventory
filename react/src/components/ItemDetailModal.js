@@ -12,6 +12,17 @@ const rarityNames = {
   7: 'Quest Item',
 };
 
+const rarityNames_ui = {
+  0: 'mundane',
+  1: 'common',
+  2: 'uncommon',
+  3: 'rare',
+  4: 'veryrare',
+  5: 'epic',
+  6: 'legendary',
+  7: 'questitem',
+};
+
 const typeNames = {
   1: 'Weapon',
   2: 'Armor',
@@ -48,7 +59,7 @@ const ItemDetailModal = ({ isOpen, item, onClose }) => {
 
             <div className="item-detail-modal-img-titel">
                 <img src={img} alt={name} className="item-detail-modal-image" />
-                <h2 className="item-detail-modal-name">{name}</h2>
+                <h2 className={`item-detail-modal-name ${rarityNames_ui[rarity]}`}>{name}</h2>
             </div>
 
             <p className={`item-detail-modal-rarity ${rarityNames[rarity]}`}>

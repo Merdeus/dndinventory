@@ -1,0 +1,81 @@
+.game-info-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.37);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .game-info-modal {
+    background: rgb(68, 68, 68);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 
+    0 0 24px rgba(0, 0, 0, 0.705), /* Larger blur for shadow effect */
+    0 0 4px rgba(0, 0, 0, 0.877);
+  }
+  
+  .game-info-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  
+  .game-info-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .game-info-modal-content {
+    margin-top: 10px;
+  }
+  
+  .game-info-modal-text {
+    margin: 8px 0;
+    font-size: 17px;
+  }
+  
+  .game-info-bold {
+    font-weight: bold;
+  }
+
+  
+  .game-info-modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+  }
+  
+  .game-info-modal-button {
+    background-color: #427943;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .game-info-modal-button:hover {
+    background-color: #45a049;
+  }
+  
+
+  .game-info-modal-button.notImplemented {
+    background-color: #353535;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: not-allowed;
+  }

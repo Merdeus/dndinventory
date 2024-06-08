@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 import { useWebSocket } from './WebSocketContext';
+import { useMatch } from './MatchContext';
 import ItemModal from './ItemModal';
 import './LootList.css';
 import LootModal from './LootModal';
+import GoldModal from './GoldModal';
+import Item from './Item';
+import PlayerSelectModal from './PlayerSelectModal';
+
+
+const rarityNames = {
+  0: 'mundane',
+  1: 'common',
+  2: 'uncommon',
+  3: 'rare',
+  4: 'veryrare',
+  5: 'epic',
+  6: 'legendary',
+  7: 'questitem',
+};
 
 const ContextMenu = ({ position, options, onClose }) => {
   const [submenuPosition, setSubmenuPosition] = useState(null);
@@ -62,58 +78,27 @@ const ContextMenu = ({ position, options, onClose }) => {
   );
 };
 
-const Item = ({ name, description, value, image, onRightClick }) => {
-  if (!image) {
-    image = 'https://www.dndbeyond.com/attachments/2/741/potion.jpg';
-  }
-
-  return (
-    <div className="item-container"
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onRightClick(e);
-      }}
-    >
-      <img src={image} alt={name} className="item-image" />
-      <div className="item-content">
-        <div className="item-name">{name}</div>
-        <div className="item-description">{description}</div>
-        <div className="item-value">{`${value}GP`}</div>
-      </div>
-    </div>
-  );
-};
-
-const LootList = ({ items, players }) => {
+const LootList = ({ items, currentGold }) => {
   const [sortType, setSortType] = useState('name');
   const [contextMenu, setContextMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
-
+  const [isPlayerSelectModalOpen, setIsPlayerSelectModalOpen] = useState(false);
+  const [goldAmount, setGoldAmount] = useState(currentGold);
+  const [showGoldModal, setShowGoldModal] = useState(false);
   const webSocketService = useWebSocket();
+  const { matchState, updateMatchState } = useMatch();
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  const handleAddNewItem = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleSaveNewItem = (newItem) => {
-    console.log('New item saved:', newItem);
-    setIsModalOpen(false);
-
+  const handleLootModalSubmit = (count) => {  
     webSocketService.sendMessage({
-      type: 'AddItem',
-      item: newItem,
+      type: 'GenerateLootItems',
+      count_list: count,
     });
-  };
-
-  const handleLootModalSubmit = (lootlist) => {  
-
-    // TODO: Implement loot generation
     setIsLootModalOpen(false);
   }
 
@@ -128,6 +113,8 @@ const LootList = ({ items, players }) => {
         return a.name.localeCompare(b.name);
       } else if (sortType === 'id') {
         return b.id - a.id;
+      } else if (sortType === 'rarity') {
+        return b.rarity - a.rarity;
       } else {
         return b.value - a.value;
       }
@@ -137,27 +124,12 @@ const LootList = ({ items, players }) => {
     setContextMenu({
       position: { x: e.pageX, y: e.pageY },
       options: [
-        { label: 'Edit', onClick: () => console.log('Edit', item) },
         { label: 'Delete', onClick: () => {
           webSocketService.sendMessage({
-            type: 'DeleteItemPrefab',
-            item_id: item.id
+            type: 'RemoveLootItem',
+            loot_id: item.lootid
           });
         }},
-        (players.length > 0 && players[0].id !== 0) ? {
-          label: 'Give to',
-          submenu: players.map(player => ({
-            label: player.name,
-            onClick: () => {
-              console.log('DM: Give to', player.name, item);
-              webSocketService.sendMessage({
-                type: 'GiveItem',
-                player_id: player.id,
-                item_id: item.id,
-              });
-            }
-          }))
-        } : { label: 'No players', onClick: () => {} },
       ],
     });
   };
@@ -166,16 +138,70 @@ const LootList = ({ items, players }) => {
     setContextMenu(null);
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const itemId = e.dataTransfer.getData('id');
+    webSocketService.sendMessage({
+      type: 'AddLootItem',
+      item_id: itemId,
+    });
+  };
+
+  const handleOpenGoldModal = (player) => {
+	  	setShowGoldModal(true);
+	};
+  
+	const handleCloseGoldModal = () => {
+	  setShowGoldModal(false);
+	};
+  
+	const handleGoldSubmit = (goldValue) => {
+    webSocketService.sendMessage({
+      type: 'SetLootGold',
+      loot_gold: goldValue,
+    });
+    setGoldAmount(goldValue);
+		setShowGoldModal(false);
+	};
+
+  const clearLootTable = () => {
+    webSocketService.sendMessage({
+      type: 'ClearLoot',
+    });
+  }
+
+  const handleOpenPlayerSelectModal = () => {
+    setIsPlayerSelectModalOpen(true);
+  }
+
+  const handleClosePlayerSelectModal = () => {
+    setIsPlayerSelectModalOpen(false);
+  }
+
+  const handlePlayerSelectModalSubmit = (players) => {
+    webSocketService.sendMessage({
+      type: 'DistributeLoot',
+      players: players,
+    });
+    setIsPlayerSelectModalOpen(false);
+  }
+
 
   return (
     <>
-    <div className="inventory-container">
+    <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
       <div className="inventory-header">
         <h2>Loot</h2>
+        <h3>Current Gold: {goldAmount}</h3>
         <div className='sort-div'>
           <div className="sort-label">Sort by:</div>
           <div className="sort-buttons">
             <button className={sortType === 'name' ? 'selected' : ''} onClick={() => setSortType('name')}>Name</button>
+            <button className={sortType === 'rarity' ? 'selected' : ''} onClick={() => setSortType('rarity')}>Rarity</button>
             <button className={sortType === 'value' ? 'selected' : ''} onClick={() => setSortType('value')}>Value</button>
           </div>
         </div>
@@ -188,27 +214,37 @@ const LootList = ({ items, players }) => {
           onChange={handleSearchChange}
           className="search-input"
         />
-        <button className="add-item-button" onClick={handleAddNewItem}>
-          &#43; {/* Plus symbol */}
+        <button className="set-gold-button" onClick={handleOpenGoldModal}>
+          G
+        </button>
+        <button className="loot-clear-button" onClick={clearLootTable}>
+          X
         </button>
       </div>
 
-        <div className="loot-container centerLootContainer" onClick={() => {setIsLootModalOpen(true)}}>
-			Generate Loot
+      <div className="loot-container centerLootContainer" onClick={() => {setIsLootModalOpen(true)}}>
+			  Generate Loot
 	    </div>
 
       <div className="inventory-list">
         {sortedItems.map(item => (
           <Item
-            key={item.id}
-            name={item.name}
-            description={item.description}
-            value={item.value}
-            image={item.img}
-            onRightClick={(e) => handleRightClick(e, item)}
-          />
+          key={item.lootid}
+          id={item.id}
+          name={item.name}
+          description={item.description}
+          value={item.value}
+          image={item.img}
+          type={item.type}
+          count={item.count}
+          rarity={rarityNames[item.rarity]}
+          onRightClick={(e) => handleRightClick(e, item)}
+        />
         ))}
       </div>
+      <div className="loot-container centerLootContainer last" onClick={handleOpenPlayerSelectModal}>
+			  Distribute loot
+	    </div>
       {contextMenu && (
         <ContextMenu
           position={contextMenu.position}
@@ -216,17 +252,20 @@ const LootList = ({ items, players }) => {
           onClose={handleCloseContextMenu}
         />
       )}
-      <ItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveNewItem}
-      />
     </div>
       {isLootModalOpen && (
         <LootModal
           onClose={handleLootModalClose}
           onSubmit={handleLootModalSubmit}
         />
+      )}
+
+      {showGoldModal && (
+        <GoldModal prevGold={goldAmount} onSubmit={handleGoldSubmit} onClose={handleCloseGoldModal} />
+      )}
+
+      {isPlayerSelectModalOpen && (
+        <PlayerSelectModal players={matchState.inventories} onClose={handleClosePlayerSelectModal} onSubmit={handlePlayerSelectModalSubmit} />
       )}
     
     </>

@@ -1,5 +1,8 @@
+import time
+
 import requests
 from enum import Enum, auto
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from main import create_new_item
 import json
 
@@ -91,7 +94,7 @@ imgTypes = {
     ItemType.WONDROUS: "https://i.imgur.com/JcOSiaU.jpeg"
 }
 
-def fetchItem(url, mundane=False):
+def fetchItem(url, gameid, mundane=False):
     citem = requests.get("https://www.dnd5eapi.co" + url).json()
     #print(citem)
     item_name = citem["name"]
@@ -101,7 +104,7 @@ def fetchItem(url, mundane=False):
         print("Item has Variants...")
         for variant in citem["variants"]:
             print(f" - Creating Variant {variant['name']}...")
-            fetchItem(variant["url"], mundane=mundane)
+            fetchItem(variant["url"], gameid, mundane=mundane)
         return # this item has variants of it, do not add itself to the list
 
 
@@ -171,27 +174,25 @@ def fetchItem(url, mundane=False):
                 if "max_bonus" in citem["armor_class"]:
                     item_desc += " (max " + str(citem["armor_class"]["max_bonus"]) + ")"
 
-    if create_new_item(item_name, item_desc, item_value, item_img, item_rarity.value, item_type.value):
+    if create_new_item(item_name, item_desc, item_value, item_img, item_rarity.value, item_type.value, gameid):
         #print(f"Item {item_name} created successfully")
         pass
     else:
         print(f"Item {item_name} failed to be created")
 
-if __name__ == "__main__":
-
-    print(" ")
-    print("Creating mundane Items...")
-    print(" ")
+def importDnDItems(gameid:int):
+    print("\nCreating mundane Items...\n")
 
     items = requests.get("https://www.dnd5eapi.co/api/equipment").json()["results"]
-    for item in items:
-        fetchItem(item["url"], mundane=True)
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(fetchItem, item["url"], gameid, True) for item in items]
+        for future in as_completed(futures):
+            future.result()  # To raise any exceptions that occurred
 
-    print(" ")
-    print(" ")
-    print("Creating magical items...")
+    print("\nCreating magical items...\n")
 
     items = requests.get("https://www.dnd5eapi.co/api/magic-items").json()["results"]
-    for item in items:
-        fetchItem(item["url"], mundane=False)
-
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(fetchItem, item["url"], gameid, False) for item in items]
+        for future in as_completed(futures):
+            future.result()  # To raise any exceptions that occurred
