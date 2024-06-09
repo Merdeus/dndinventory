@@ -5,6 +5,8 @@ import { RoundedBoxPage } from './RoundBoxPage';
 
 const SelectPlayer = ({items, callback}) => {
 
+    items = Object.values(items);
+
     // add Dungeon Master to the list in the beginning of the list of players, but only if it does not already exist
     if (items[0] === undefined || items[0].id !== -1)
         items.unshift({ id: -1, name: 'Dungeon Master', description: 'The one who creates the world and controls the game', gold: 0 });

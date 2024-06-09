@@ -1,0 +1,35 @@
+/* PlayerView.css */
+
+.player-view-container {
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.5s ease;
+  }
+  
+  .player-view-inventory {
+    width: 100%;
+    max-width: 800px; /* Adjust as needed */
+    transition: all 0.5s ease;
+  }
+  
+  .player-view-loot-list {
+    width: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: all 0.5s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+  
+  .player-view-container.show-loot-list .player-view-inventory {
+    max-width: 47vw;
+  }
+  
+  .player-view-container.show-loot-list .player-view-loot-list {
+    width: 100%;
+    max-width: 47vw;
+    opacity: 1;
+    padding: 20px; /* Adjust as needed */
+  }
+  

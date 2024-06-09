@@ -11,6 +11,7 @@ class WebSocketService {
       this.connecting = false;
       this.connectionAddress = null;
       this.syncToken = null;
+      this.skipRetry = false;
     }
   
     connect(url, callback) {
@@ -38,13 +39,13 @@ class WebSocketService {
             }
           }
 
+          this.skipRetry = false;
           this.retryConnecting = false;
           this.connected = true;
           this.connecting = false;
           this.retryCount = 0;
           callback()
         };
-
         this.socket.onclose = () => {
             this.connecting = false;
             if (!this.connected) {
@@ -53,7 +54,7 @@ class WebSocketService {
             }
 
             console.log('WebSocketService: Connection broken!');
-            if (this.retryCount < 30) {
+            if (this.retryCount < 30 && !this.skipRetry && this.syncToken !== null) {
 
               if (this.retryHandlingCallback) {
                 this.retryHandlingCallback(this.retryCount);
@@ -140,8 +141,10 @@ class WebSocketService {
   
     close() {
       if (this.socket) {
-        this.socket.close();
+        
         this.messageHandlers = this.messageHandlers.filter(handler => handler.persist !== undefined && handler.persist === true)
+        this.skipRetry = true;
+        this.socket.close();
       }
     }
   }

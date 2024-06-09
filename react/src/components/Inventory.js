@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useMatch } from './MatchContext';
 import './Inventory.css';
 import Item from './Item';
 
@@ -87,9 +88,10 @@ const ContextMenu = ({ position, options, onClose }) => {
     );
   };
 
-const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem }) => {
+const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellItem }) => {
   const [sortType, setSortType] = useState('id');
   const [contextMenu, setContextMenu] = useState(null);
+  const { matchState } = useMatch();
 
   if (!deleteItem)
     deleteItem = (item) => console.log('DeleteItem not implemented: ', item);
@@ -111,16 +113,21 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem }) => {
     const options = [];
 
     if (!isDMView) {
-      options.push({ label: 'Sell', onClick: () => console.log('Sell', item) });
+      options.push({ label: 'Sell', onClick: () => sellItem(item.id) });
     }
   
     options.push(
-      { label: 'Delete', onClick: () => deleteItem(item) },
+      { label: 'Delete', onClick: () => deleteItem(item.id) },
       {
         label: 'Send to',
-        submenu: players.map(player => ({
+        submenu: players
+        .filter(player => player.id !== matchState.player)
+        .map(player => ({
           label: player.name,
-          onClick: () => console.log(`Send ${item.name} to ${player.name}`)
+          onClick: () => {
+            console.log(`Send ${item.name} to ${player.name}`);
+            giveItem(player.id, item.id);
+        }
         }))
       }
     );

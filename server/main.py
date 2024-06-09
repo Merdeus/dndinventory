@@ -305,13 +305,26 @@ class GameSettings(Base):
 class LootPool:
     _instances = []
 
+    class Phase(Enum):
+        PREP = 0
+        CLAIM = 1
+        VOTE = 2
+        CONCLUDED = 3
+
     def __init__(self, gameid):
         self.gameid = gameid
-        self.loot : list[tuple[int,int]] = []
+        self.loot = {}
         self.gold = 0
+        self.remainingTime = 0
+
         self.players = []
+        self.votes = []
+        self.claims = []
+
         self.nextLootId = 1
         self.__class__._instances.append(self)
+
+        self.phase = LootPool.Phase.PREP
 
     def __del__(self):
         try:
@@ -320,24 +333,110 @@ class LootPool:
             pass
 
     def addLoot(self, itemid : int):
-        self.loot.append((itemid, self.nextLootId))
+        self.loot[self.nextLootId] = {}
+        self.loot[self.nextLootId]["itemid"] = itemid
+        self.loot[self.nextLootId]["claims"] = []
+        self.loot[self.nextLootId]["votes"] = []
         self.nextLootId += 1
 
     def removeLoot(self, loot_id : int):
-        print("Removing loot")
-        print(self.loot)
-        self.loot = [i for i in self.loot if i[1] != loot_id]
-        print(self.loot)
+        self.loot[loot_id] = None
+
+    def setClaim(self, loot_id : int, player_id : int, unClaim=False):
+        if self.phase is not LootPool.Phase.CLAIM:
+            return
+        if self.loot[loot_id] is None:
+            return
+        if player_id not in self.players:
+            return
+        if unClaim:
+            self.loot[loot_id].claims[player_id] = None
+            self.loot[loot_id].votes[player_id] = None
+            return
+
+        self.loot[loot_id].claims = [] if self.loot[loot_id].claims is None else self.loot[loot_id].claims
+        self.loot[loot_id].claims[player_id] = True
+        self.loot[loot_id].votes[player_id] = player_id
+
+    def setVote(self, loot_id : int, voted_player_id : int, vote_player_id : int):
+        if self.phase is not LootPool.Phase.VOTE:
+            return
+        if self.loot[loot_id] is None:
+            return
+        if voted_player_id not in self.players:
+            return # only allow votes for people who are allowed to get this item
+        if not self.loot[loot_id].claims[voted_player_id]:
+            return # only allow votes for people who claim this item
+
+        if self.loot[loot_id].claims[vote_player_id]:
+            return # if you have claimed an item you automatically vote for yourself
+        self.loot[loot_id].votes[vote_player_id] = voted_player_id
+
+    def resolve(self) -> (dict | None):
+        if self.phase is not LootPool.Phase.VOTE:
+            return
+
+        randomBias = {}
+        results = {}
+        for ply in self.players:
+            results[ply] = []
+            randomBias[ply] = 0
+
+        for loot_id, vals in enumerate(self.loot):
+            if len(vals.claims) == 0:
+                # this code basically will give the item to a random player and will record who received it
+                # and the next time a random player receives an item, a player who has not received anything will
+                # get priority over players who have already received random stuff
+                lowest_val = min(randomBias.values())
+                keys_lowest_val = [key for key, value in randomBias.items() if value == lowest_val]
+                picked_player = random.choice(keys_lowest_val)
+                results[picked_player].append(loot_id)
+                randomBias[picked_player] += 1
+                continue
+
+            if len(vals.claims) == 1:
+                claimed_player = next(iter(vals['claims']))
+                results[claimed_player].append(loot_id)
+                continue
+
+            # there has to be atleast more than one vote because there are more than one claim and if a player claims
+            # they automatically vote for themselves
+
+            mostLikely = {}
+            for vote in vals.votes:
+                mostLikely[vote] = mostLikely.get(vote, 0) + 1
+
+            highest_val = max(mostLikely.values())
+            winning_players = [key for key, value in mostLikely.items() if value == highest_val]
+            picked_player = random.choice(winning_players)
+            results[picked_player].append(loot_id)
+            if len(winning_players) > 1:
+                randomBias[picked_player] += 1
+
+        return results
+
+
+    def abortLootPool(self):
+        self.__class__._instances.remove(self)
+        del self
+
+    def setNextPhase(self):
+        if self.phase is LootPool.Phase.PREP:
+            self.phase = LootPool.Phase.CLAIM
+        elif self.phase is LootPool.Phase.CLAIM:
+            self.phase = LootPool.Phase.VOTE
+        elif self.phase is LootPool.Phase.VOTE:
+            self.phase = LootPool.Phase.CONCLUDED
 
     def getLoot(self):
         session = Session()
         loot_list = []
         try:
-            for tmp in self.loot:
-                item = ItemPrefab.getFromId(tmp[0], session)
+            for lootid, vals in self.loot.items():
+                item = ItemPrefab.getFromId(vals["itemid"], session)
                 loot_list.append({
                     'id': item.id,
-                    'lootid': tmp[1],
+                    'lootid': lootid,
                     'name': item.name,
                     'rarity': item.rarity,
                     'type': item.type,
@@ -367,7 +466,9 @@ class LootPool:
                 count = countList.get(rarity_str, 0)
                 if count > 0:
                     items = session.query(ItemPrefab).filter_by(gameid=self.gameid, rarity=rarity_enum.value).all()
-                    for _ in range(count):
+                    if len(items) < 1:
+                        continue
+                    for _ in range(min(count, 12)): # vale causec crash
                         if items:
                             item = random.choice(items)
                             self.addLoot(item.id)
@@ -381,7 +482,8 @@ class LootPool:
             "msg": {
                 "items": self.getLoot(),
                 "gold": self.gold,
-                "players": self.players
+                "players": self.players,
+                "phase": self.phase.value,
             }
         }
         for client in clientList:
@@ -422,7 +524,6 @@ class Game(Base):
 
     settings = relationship("GameSettings", uselist=False, back_populates="game")
 
-
     def getInfo(self, session=None):
 
         sessionNotGiven = session is None
@@ -431,17 +532,21 @@ class Game(Base):
 
         tmp = session.query(Player).filter_by(gameid=self.id).all()
 
+        t_players = {}
+        for ply in tmp:
+            t_players[ply.id] = {
+                'id': ply.id,
+                'name': ply.name,
+                'gold': ply.gold,
+            }
+
         data = {
             "game": {
                 "id": self.id,
                 "name": self.name,
                 "join_code": self.join_code,
             },
-            "players": [{
-                'id': i.id,
-                'name': i.name,
-                'gold': i.gold,
-            } for i in tmp]
+            "players": t_players
         }
 
         if sessionNotGiven:
@@ -565,20 +670,19 @@ class Game(Base):
                         data = {
                             "type": "inventory_update",
                             "msg": {
-                                "inventory": {
-                                    item.id : {
-                                        'id': item.id,
-                                        'id_prefab': item.id_prefab,
-                                        'name': item.name,
-                                        'rarity': item.rarity,
-                                        'type': item.type,
-                                        'description': item.description,
-                                        'count': item.count,
-                                        'value': item.value,
-                                        'img': item.img,
-                                        'stackable': item.prefab.stackable,
-                                        'unique': item.prefab.unique
-                                    }
+                                "itemid": item.id,
+                                "item": {
+                                    'id': item.id,
+                                    'id_prefab': item.id_prefab,
+                                    'name': item.name,
+                                    'rarity': item.rarity,
+                                    'type': item.type,
+                                    'description': item.description,
+                                    'count': item.count,
+                                    'value': item.value,
+                                    'img': item.img,
+                                    'stackable': item.prefab.stackable,
+                                    'unique': item.prefab.unique
                                 }
                             }
                         }
@@ -664,22 +768,25 @@ class Client:
 
     def getInventory(self):
         session = Session()
-        tmp = session.query(Item).filter_by(owner=self.playerid).all()
-        res = [{
-            'id': i.id,
-            'id_prefab': i.id_prefab,
-            'name': i.name,
-            'rarity': i.rarity,
-            'type': i.type,
-            'description': i.description,
-            'count': i.count,
-            'value': i.value,
-            'img': i.img,
-            'stackable': i.prefab.stackable,
-            'unique': i.prefab.unique
-        } for i in tmp]
+        items = session.query(Item).filter_by(owner=self.playerid).all()
+        inventory = {}
+
+        for i in items:
+            inventory[i.id] = {
+                'id': i.id,
+                'id_prefab': i.id_prefab,
+                'name': i.name,
+                'rarity': i.rarity,
+                'type': i.type,
+                'description': i.description,
+                'count': i.count,
+                'value': i.value,
+                'img': i.img,
+                'stackable': i.prefab.stackable,
+                'unique': i.prefab.unique
+            }
         session.close()
-        return res
+        return inventory
 
     def getInventories(self):
         session = Session()
@@ -746,9 +853,9 @@ class Client:
         ply.gold += item.value
 
         await Game.syncPlayerItem(self.gameid, item.id, isRemoval=True)
-
         session.delete(item)
         session.commit()
+        await Game.syncPlayerGold(self.gameid, ply)
 
         message = f'Player {ply.name} sold item "{item.name}" for {item.value} gold'
         log(message)
@@ -1148,12 +1255,12 @@ class Client:
 
                         case _:
                             print(f"Unknown message type {msg['type']}")
-                except KeyError as e:
-                    print("e Error:", e)
-                    await self.send(json.dumps({
-                        "type": "error",
-                        "msg": "Invalid un message"
-                    }))
+                # except KeyError as e:
+                #     print("e Error:", e)
+                #     await self.send(json.dumps({
+                #         "type": "error",
+                #         "msg": "Invalid un message"
+                #     }))
 
                 except NotFoundByIDException as e:
                     print("e Error:", e)
@@ -1330,7 +1437,7 @@ async def registerNewPlayer(player_name: str, gameid: int, starting_gold: int):
 def createNewGame(name: str, description: str, dm_pass: str):
     res = -1
     session = Session()
-    game = Game(name=name, dm_pass=dm_pass, join_code=(''.join(random.choice(string.ascii_uppercase) for _ in range(6))))
+    game = Game(name=name, dm_pass=dm_pass, join_code=(''.join(random.choice(string.ascii_uppercase) for _ in range(8))))
     game_settings = GameSettings()
     game.settings = game_settings
     session.add(game)
@@ -1526,7 +1633,7 @@ if __name__ == "__main__":
     if certificate_path is not None and privatekey_path is not None:
         # creating ssl context for secure connection (wss instead of ws)
         try:
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_context.load_cert_chain(certfile=certificate_path, keyfile=privatekey_path)
         except FileNotFoundError:
             ssl_context = None

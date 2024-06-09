@@ -6,9 +6,8 @@ import Inventory from './Inventory';
 import { useMatch } from './MatchContext';
 import TextInputModal from './TextInputModal';
 import DungeonMasterView from './DungeonMasterView';
+import PlayerView from './PlayerView';
 import "./Game.css";
-
-// PMIKUT
 
 function Game() {
 
@@ -67,7 +66,8 @@ function Game() {
             }
             updateMatchState([]);
           } else {
-            updateInventory(message.msg.inventory);
+            matchState.inventory[message.msg.itemid] = message.msg.item;
+            updateMatchState([]);
           }
         }
       }
@@ -77,10 +77,17 @@ function Game() {
         identifier: 'gold_update_handler',
         messageType: "gold_update",
         callback: (message) => {
-          console.log("Gold Update:", message.msg, Object.keys(matchState.inventories), matchState.inventories[message.msg.playerid]);
-          //matchState.game.players[message.msg.playerid].gold = message.msg.gold;
-          matchState.inventories[message.msg.playerid].gold = message.msg.gold;
-          updateMatchState([]); // stoopid
+          if (matchState.isDM) {
+            console.log("Gold Update:", message.msg, Object.keys(matchState.inventories), matchState.inventories[message.msg.playerid]);
+            //matchState.game.players[message.msg.playerid].gold = message.msg.gold;
+            matchState.inventories[message.msg.playerid].gold = message.msg.gold;
+            matchState.game.players[message.msg.playerid].gold = message.msg.gold;
+            updateMatchState([]); // stoopid
+          } else {
+            console.log("Gold Update:", message.msg);
+            matchState.game.players[message.msg.playerid].gold = message.msg.gold;
+            updateMatchState([]);
+          }
         }
       });
 
@@ -92,7 +99,7 @@ function Game() {
           if (matchState.isDM) {
             delete matchState.inventories[message.msg.playerid].inventory[message.msg.itemid];
           } else {
-            delete matchState.player.inventory[message.msg.itemid];
+            delete matchState.inventory[message.msg.itemid];
           }
           updateMatchState([]); // stoopid
         }
@@ -190,7 +197,7 @@ function Game() {
               />
             </>;
     } else {
-      return <Inventory items={matchState.inventory} players={matchState.game.players} />;
+      return <PlayerView />;
     }
   }
   
