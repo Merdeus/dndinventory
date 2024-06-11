@@ -151,6 +151,7 @@ class Player(Base):
     level = Column(Integer)
     gold = Column(Integer)
     gameid = Column(Integer, ForeignKey('games.id'))
+    game = relationship("Game", back_populates="players")
 
     def __repr__(self):
         return f"<Player(id={self.id}, name='{self.name}', level={self.level}, gold={self.gold}, game_id={self.gameid})>"
@@ -315,9 +316,9 @@ class LootPool:
         self.gameid = gameid
         self.loot = {}
         self.gold = 0
-        self.remainingTime = 0
 
-        self.players = []
+        self.finished = [] # players who are finished claiming / voting
+        self.players = [] # players who should receive anything from this lootpool
         self.votes = []
         self.claims = []
 
@@ -335,12 +336,48 @@ class LootPool:
     def addLoot(self, itemid : int):
         self.loot[self.nextLootId] = {}
         self.loot[self.nextLootId]["itemid"] = itemid
-        self.loot[self.nextLootId]["claims"] = []
-        self.loot[self.nextLootId]["votes"] = []
+        self.loot[self.nextLootId]["claims"] = {}
+        self.loot[self.nextLootId]["votes"] = {}
         self.nextLootId += 1
 
     def removeLoot(self, loot_id : int):
         self.loot[loot_id] = None
+
+    def getToWait(self):
+        results = {}
+        session = Session()
+        current_game = Game.getFromId(self.gameid, session)
+        for ply in current_game.players:
+            if self.phase == LootPool.Phase.CLAIM:
+                if ply.id not in self.finished:
+                    if ply.id in self.players:
+                        results[ply.id] = ply.name
+            elif self.phase == LootPool.Phase.VOTE:
+                if ply.id not in self.finished:
+                    results[ply.id] = ply.name
+        return results
+
+    def handleNewFinish(self, player_id : int) -> bool:
+        """Returns True if after the player_id has been added, every player has voted / claimed"""
+
+        # if already "finished" then ignore
+        if player_id in self.finished:
+            return False
+
+        # if it is the claim phase, only people who are in self.players are allowed to claim / others are ignored
+        if self.phase == LootPool.Phase.CLAIM and player_id not in self.players:
+            return False
+
+        session = Session()
+        current_game = Game.getFromId(self.gameid, session)
+        for ply in current_game.players:
+            if ply.id == player_id:
+                self.finished.append(player_id)
+                break
+
+        res = len(current_game.players) == len(self.finished) if self.phase == LootPool.Phase.VOTE else len(self.finished) == len(self.players)
+        session.close()
+        return res
 
     def setClaim(self, loot_id : int, player_id : int, unClaim=False):
         if self.phase is not LootPool.Phase.CLAIM:
@@ -350,13 +387,12 @@ class LootPool:
         if player_id not in self.players:
             return
         if unClaim:
-            self.loot[loot_id].claims[player_id] = None
-            self.loot[loot_id].votes[player_id] = None
+            self.loot[loot_id]["claims"][player_id] = None
+            self.loot[loot_id]["votes"][player_id] = None
             return
 
-        self.loot[loot_id].claims = [] if self.loot[loot_id].claims is None else self.loot[loot_id].claims
-        self.loot[loot_id].claims[player_id] = True
-        self.loot[loot_id].votes[player_id] = player_id
+        self.loot[loot_id]["claims"][player_id] = True
+        self.loot[loot_id]["votes"][player_id] = player_id
 
     def setVote(self, loot_id : int, voted_player_id : int, vote_player_id : int):
         if self.phase is not LootPool.Phase.VOTE:
@@ -365,12 +401,12 @@ class LootPool:
             return
         if voted_player_id not in self.players:
             return # only allow votes for people who are allowed to get this item
-        if not self.loot[loot_id].claims[voted_player_id]:
+        if not self.loot[loot_id]["claims"][voted_player_id]:
             return # only allow votes for people who claim this item
 
-        if self.loot[loot_id].claims[vote_player_id]:
+        if self.loot[loot_id]["claims"][vote_player_id]:
             return # if you have claimed an item you automatically vote for yourself
-        self.loot[loot_id].votes[vote_player_id] = voted_player_id
+        self.loot[loot_id]["votes"][vote_player_id] = voted_player_id
 
     def resolve(self) -> (dict | None):
         if self.phase is not LootPool.Phase.VOTE:
@@ -420,7 +456,8 @@ class LootPool:
         self.__class__._instances.remove(self)
         del self
 
-    def setNextPhase(self):
+    def nextPhase(self):
+        self.finished = []
         if self.phase is LootPool.Phase.PREP:
             self.phase = LootPool.Phase.CLAIM
         elif self.phase is LootPool.Phase.CLAIM:
@@ -430,11 +467,11 @@ class LootPool:
 
     def getLoot(self):
         session = Session()
-        loot_list = []
+        loot_list = {}
         try:
             for lootid, vals in self.loot.items():
                 item = ItemPrefab.getFromId(vals["itemid"], session)
-                loot_list.append({
+                loot_list[lootid] = {
                     'id': item.id,
                     'lootid': lootid,
                     'name': item.name,
@@ -444,8 +481,9 @@ class LootPool:
                     'value': item.value,
                     'img': item.img,
                     'stackable': item.stackable,
-                    'unique': item.unique
-                })
+                    'unique': item.unique,
+                    'ext': vals
+                }
         finally:
             session.close()
         return loot_list
@@ -484,6 +522,7 @@ class LootPool:
                 "gold": self.gold,
                 "players": self.players,
                 "phase": self.phase.value,
+                "waiting": self.getToWait()
             }
         }
         for client in clientList:
@@ -521,7 +560,7 @@ class Game(Base):
     name = Column(String)
     dm_pass = Column(String)
     join_code = Column(String)
-
+    players = relationship("Player", back_populates="game")
     settings = relationship("GameSettings", uselist=False, back_populates="game")
 
     def getInfo(self, session=None):
@@ -866,9 +905,6 @@ class Client:
         if not self.isDM and not item.isPlayerOwner(self.playerid):
             return False, f"You don't own this item!"
 
-        item.owner = toSentplayer
-        session.commit()
-
         return True
 
 
@@ -930,6 +966,64 @@ class Client:
                 try:
                     match msg["type"]:
 
+                        case "ClaimLootItem":
+                            print(f"CLAIMLOOTITEM {msg}")
+                            loot_id = msg["loot_id"]
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            if currentLootPool.loot.get(loot_id) is None:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Item {loot_id} does not exist!"
+                                }))
+                                continue
+                            currentLootPool.setClaim(loot_id, self.playerid)
+                            await currentLootPool.sendLootList()
+
+                        case "VoteLootItem":
+
+                            loot_id = msg["loot_id"]
+                            player_id = msg["player_id"]
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            if currentLootPool.items.get(loot_id) is None:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Item {loot_id} does not exist!"
+                                }))
+                                continue
+                            session = Session()
+                            try:
+                                target_player = Player.getFromId(player_id, session)
+                                if target_player.gameid != self.gameid:
+                                    await self.send(json.dumps({
+                                        "type": "error",
+                                        "msg": f"Invalid VoteLootitem!"
+                                    }))
+                                    return
+                                currentLootPool.setVote(loot_id, self.playerid, player_id)
+                                await currentLootPool.sendLootList()
+                            except NotFoundByIDException:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"Invalid VoteLootitem!"
+                                }))
+                                continue
+                            finally:
+                                session.close()
+
+                        case "LootPhaseDone":
+                            currentLootPool = LootPool.create_new_lootpool(self.gameid)
+                            if currentLootPool.phase != LootPool.Phase.CLAIM and currentLootPool.phase != LootPool.Phase.VOTE:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid request"
+                                }))
+                                continue
+
+                            if currentLootPool.handleNewFinish(self.playerid):
+                                currentLootPool.nextPhase()
+
+                            await currentLootPool.sendLootList()
+
                         case "AddLootItem":
                             if not self.isDM:
                                 await self.send(json.dumps({
@@ -940,6 +1034,14 @@ class Client:
 
                             item_id = msg["item_id"]
                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+
+                            if currentLootPool.phase.value != 0:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "You can only add loot during the preparations."
+                                }))
+                                continue
+
                             currentLootPool.addLoot(item_id)
                             await currentLootPool.sendLootList()
 
@@ -1001,7 +1103,7 @@ class Client:
                                 return
 
                             currentLootPool = LootPool.find_by_gameid(self.gameid)
-                            if not currentLootPool:
+                            if currentLootPool is None:
                                 await self.send(json.dumps({
                                     "type": "error",
                                     "msg": "There is no active lootpool"
@@ -1009,7 +1111,28 @@ class Client:
                                 continue
 
                             selected_players = msg["players"]
+                            if len(selected_players) < 1:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "You have to select more than one player"
+                                }))
+                                continue
 
+                            session = Session()
+                            try:
+                                for player in selected_players:
+                                    Player.getFromId(player, session)
+                            except NotFoundByIDException:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "Invalid player in player selection"
+                                }))
+                                continue
+
+                            currentLootPool.players = [int(i) for i in selected_players]
+                            currentLootPool.nextPhase()
+                            await currentLootPool.sendLootList()
+                            session.close()
 
                         case "SellItem":
                             item_id = msg["item_id"]
@@ -1029,7 +1152,29 @@ class Client:
                             to_sent_player_id = msg["player_id"]
                             session = Session()
                             current_item = Item.getFromId(item_id, session)
-                            await self.SendItem(current_item, to_sent_player_id, session)
+                            succ, msg = self.SendItem(current_item, to_sent_player_id, session)
+                            if not succ:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": msg
+                                }))
+                                session.close()
+                                continue
+
+                            item_prefab_id = current_item.id_prefab
+                            await Game.syncPlayerItem(self.gameid, current_item.id, isRemoval=True)
+                            session.delete(current_item)
+
+                            ply = Player.getFromId(to_sent_player_id, session)
+                            item_prefab = ItemPrefab.getFromId(item_prefab_id, session)
+                            tmp, msg = give_player_item(self.gameid, ply, item_prefab, session)
+                            if not tmp:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": f"An error occured while trying to sent a player an item! | {msg}"
+                                }))
+                                continue
+                            await Game.syncPlayerItem(self.gameid, tmp)
 
                         case "DeleteItem":
 
@@ -1565,6 +1710,8 @@ async def newserver(websocket, path):
                                 clientList.append(newClient)
                                 await newClient.sendGameInfo()
                                 await newClient.sendItemList()
+                                currentLootPool = LootPool.create_new_lootpool(game.id)
+                                await currentLootPool.sendLootList()
                                 await newClient.process()
                                 return
                             else:
@@ -1584,6 +1731,8 @@ async def newserver(websocket, path):
                             clientList.append(newClient)
                             session.close()
                             await newClient.sendGameInfo()
+                            currentLootPool = LootPool.create_new_lootpool(game.id)
+                            await currentLootPool.sendLootList()
                             await newClient.process()
                             return
                         except NotFoundByIDException:
@@ -1595,7 +1744,8 @@ async def newserver(websocket, path):
 
         return
 
-    except KeyError:
+    except KeyError as e:
+        print(e)
         error = {
             "type": "error",
             "msg": "Invalid registration message"

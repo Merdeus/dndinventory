@@ -7,6 +7,7 @@
     width: 750px;
     border: 2px solid #ccbd32;
     margin: auto;
+    color: white;
   }
   
   .inventory-header {
@@ -266,4 +267,12 @@
     margin-bottom: 0px;
   }
 
-  
+  .loot-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center; /* Center the text horizontally */
+  }

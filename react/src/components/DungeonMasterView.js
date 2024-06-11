@@ -216,7 +216,7 @@ const DungeonMasterView = () => {
               />
             </>
           )}
-          {currentRightTab === "Loot" && <LootList items={matchState.loot.items} currentGold={matchState.loot.gold} />}
+          {currentRightTab === "Loot" && <LootList items={Object.values(matchState.loot.items)} currentGold={matchState.loot.gold} isDM={true} />}
 
         </div>
         <GameInfoModal

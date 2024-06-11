@@ -43,7 +43,7 @@ const ItemModal = ({ prevStuff, isOpen, onClose, onSave }) => {
   };
 
   const handleSave = () => {
-    if (!name || !description || (!imageUrl && !isCustomImage)) {
+    if (!name || (!imageUrl && !isCustomImage)) {
       alert('Please fill out all fields');
       return;
     }

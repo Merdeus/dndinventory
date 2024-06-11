@@ -20,6 +20,12 @@ const PlayerView = () => {
       setPlayerInventory(Object.values(matchState.inventory))
     }
 
+    if (matchState.loot && matchState.loot.phase && (matchState.loot.phase === 1 || matchState.loot.phase === 2)) {
+      setShowLootList(true);
+    } else {
+      setShowLootList(false);
+    }
+
   }, [matchState]);
 
   const sendItem = (playerID, itemID) => {
@@ -60,7 +66,7 @@ const PlayerView = () => {
         />
       </div>
       <div className="player-view-loot-list">
-        {showLootList && <LootList items={matchState.loot.items} currentGold={matchState.loot.gold} />}
+        {showLootList && <LootList items={Object.values(matchState.loot.items)} currentGold={matchState.loot.gold} />}
       </div>
     </div>
   );

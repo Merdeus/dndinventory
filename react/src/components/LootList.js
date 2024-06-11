@@ -7,6 +7,7 @@ import LootModal from './LootModal';
 import GoldModal from './GoldModal';
 import Item from './Item';
 import PlayerSelectModal from './PlayerSelectModal';
+import ItemDetailModal from './ItemDetailModal';
 
 
 const rarityNames = {
@@ -78,7 +79,7 @@ const ContextMenu = ({ position, options, onClose }) => {
   );
 };
 
-const LootList = ({ items, currentGold }) => {
+const LootList = ({ items, currentGold, isDM }) => {
   const [sortType, setSortType] = useState('name');
   const [contextMenu, setContextMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,6 +88,7 @@ const LootList = ({ items, currentGold }) => {
   const [isPlayerSelectModalOpen, setIsPlayerSelectModalOpen] = useState(false);
   const [goldAmount, setGoldAmount] = useState(currentGold);
   const [showGoldModal, setShowGoldModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const webSocketService = useWebSocket();
   const { matchState, updateMatchState } = useMatch();
 
@@ -183,6 +185,7 @@ const LootList = ({ items, currentGold }) => {
   }
 
   const handlePlayerSelectModalSubmit = (players) => {
+    console.log("Distribute loot to players:", players)
     webSocketService.sendMessage({
       type: 'DistributeLoot',
       players: players,
@@ -190,86 +193,227 @@ const LootList = ({ items, currentGold }) => {
     setIsPlayerSelectModalOpen(false);
   }
 
+  const handleItemClick = (item) => {
+    console.log('Item clicked:', item);
+    setSelectedItem(item);
+  };
 
-  return (
-    <>
-    <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
-      <div className="inventory-header">
-        <h2>Loot</h2>
-        <h3>Current Gold: {goldAmount}</h3>
-        <div className='sort-div'>
-          <div className="sort-label">Sort by:</div>
-          <div className="sort-buttons">
-            <button className={sortType === 'name' ? 'selected' : ''} onClick={() => setSortType('name')}>Name</button>
-            <button className={sortType === 'rarity' ? 'selected' : ''} onClick={() => setSortType('rarity')}>Rarity</button>
-            <button className={sortType === 'value' ? 'selected' : ''} onClick={() => setSortType('value')}>Value</button>
+  
+  const handleItemClaim = (loot_id) => {
+    console.log('Claiming item:', loot_id);
+    webSocketService.sendMessage({
+      type: 'ClaimLootItem',
+      loot_id: loot_id,
+    });
+  };
+
+  const handleItemVote = (loot_id, player) => {
+    console.log('Voting item:', loot_id);
+    webSocketService.sendMessage({
+      type: 'VoteLootItem',
+      loot_id: loot_id,
+      player_id: player.id,
+    });
+  };
+
+  const handleDoneWithPhase = () => {
+    webSocketService.sendMessage({
+      type: 'LootPhaseDone',
+    });
+  };
+
+  if (isDM) {
+    return (
+      <>
+      <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
+        <div className="inventory-header">
+          <h2>Loot</h2>
+          <h3>Current Gold: {goldAmount}</h3>
+          <div className='sort-div'>
+            <div className="sort-label">Sort by:</div>
+            <div className="sort-buttons">
+              <button className={sortType === 'name' ? 'selected' : ''} onClick={() => setSortType('name')}>Name</button>
+              <button className={sortType === 'rarity' ? 'selected' : ''} onClick={() => setSortType('rarity')}>Rarity</button>
+              <button className={sortType === 'value' ? 'selected' : ''} onClick={() => setSortType('value')}>Value</button>
+            </div>
           </div>
         </div>
+        <div className="inventory-search-add">
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <button className="set-gold-button" onClick={handleOpenGoldModal}>
+            G
+          </button>
+          <button className="loot-clear-button" onClick={clearLootTable}>
+            X
+          </button>
+        </div>
+  
+        <div className="loot-container centerLootContainer" onClick={() => {setIsLootModalOpen(true)}}>
+          Generate Loot
+        </div>
+  
+        <div className="inventory-list">
+          {sortedItems.map(item => (
+            <Item
+            key={item.lootid}
+            id={item.id}
+            name={item.name}
+            description={item.description}
+            value={item.value}
+            image={item.img}
+            type={item.type}
+            count={item.count}
+            rarity={rarityNames[item.rarity]}
+            onRightClick={(e) => handleRightClick(e, item)}
+            onClick={() => handleItemClick(item)}
+          />
+          ))}
+        </div>
+        <div className="loot-container centerLootContainer last" onClick={handleOpenPlayerSelectModal}>
+          Distribute loot
+        </div>
+        {contextMenu && (
+          <ContextMenu
+            position={contextMenu.position}
+            options={contextMenu.options}
+            onClose={handleCloseContextMenu}
+          />
+        )}
       </div>
-      <div className="inventory-search-add">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="search-input"
+        {isLootModalOpen && (
+          <LootModal
+            onClose={handleLootModalClose}
+            onSubmit={handleLootModalSubmit}
+          />
+        )}
+  
+        {showGoldModal && (
+          <GoldModal prevGold={goldAmount} onSubmit={handleGoldSubmit} onClose={handleCloseGoldModal} />
+        )}
+  
+        {isPlayerSelectModalOpen && (
+          <PlayerSelectModal players={matchState.inventories} onClose={handleClosePlayerSelectModal} onSubmit={handlePlayerSelectModalSubmit} />
+        )}
+
+        <ItemDetailModal
+          isOpen={!!selectedItem}
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
         />
-        <button className="set-gold-button" onClick={handleOpenGoldModal}>
-          G
-        </button>
-        <button className="loot-clear-button" onClick={clearLootTable}>
-          X
-        </button>
+      
+      </>
+    );
+  } else {
+    return (
+      <>
+      <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
+        <div className="inventory-header">
+          <h2>Loot { matchState.loot.phase === 1 ? " | Matching Phase" : " | Voting Phase"}</h2>
+          <div className='sort-div'>
+            <div className="sort-label">Sort by:</div>
+            <div className="sort-buttons">
+              <button className={sortType === 'name' ? 'selected' : ''} onClick={() => setSortType('name')}>Name</button>
+              <button className={sortType === 'rarity' ? 'selected' : ''} onClick={() => setSortType('rarity')}>Rarity</button>
+              <button className={sortType === 'value' ? 'selected' : ''} onClick={() => setSortType('value')}>Value</button>
+            </div>
+          </div>
+        </div>
+        <div className="inventory-search-add">
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+        </div>
+        <h3 title="This is the gold amount that will be split between all participating players." >Looted Gold: {goldAmount}GP</h3>
+
+        <div className="inventory-list">
+          {sortedItems.map(item => (
+            <Item
+            key={item.lootid}
+            id={item.id}
+            name={item.name}
+            description={item.description}
+            value={item.value}
+            image={item.img}
+            type={item.type}
+            count={item.count}
+            rarity={rarityNames[item.rarity]}
+            onRightClick={(e) => handleRightClick(e, item)}
+            onClick={() => handleItemClick(item)}
+            isLootListItem={true}
+            lootItemID={item.lootid} // bah
+            lootClaim={() => handleItemClaim(item.lootid)}
+            lootVote={(ply) => handleItemVote(item.lootid, ply)}
+          />
+          ))}
+        </div>
+          {matchState.loot.phase === 1 ? (
+            matchState.loot.waiting[matchState.player] ? (
+              <div className="loot-container centerLootContainer last" onClick={handleDoneWithPhase}>
+                Done with claiming
+              </div>
+            ) : (
+              <div className="loot-text">
+                Waiting for {Object.values(matchState.loot.waiting).join(", ")}
+              </div>
+            )
+          ) : matchState.loot.phase === 2 ? (
+            matchState.loot.waiting[matchState.player] ? (
+              <div className="loot-container centerLootContainer last" onClick={handleDoneWithPhase}>
+                Done with Voting
+              </div>
+            ) : (
+              <div className="loot-text">
+                Waiting for {Object.values(matchState.loot.waiting).join(", ")}
+              </div>
+            )
+          ) : (
+            <>
+            </>
+          )}
+
+        {contextMenu && (
+          <ContextMenu
+            position={contextMenu.position}
+            options={contextMenu.options}
+            onClose={handleCloseContextMenu}
+          />
+        )}
       </div>
+        {isLootModalOpen && (
+          <LootModal
+            onClose={handleLootModalClose}
+            onSubmit={handleLootModalSubmit}
+          />
+        )}
+  
+        {showGoldModal && (
+          <GoldModal prevGold={goldAmount} onSubmit={handleGoldSubmit} onClose={handleCloseGoldModal} />
+        )}
+  
+        {isPlayerSelectModalOpen && (
+          <PlayerSelectModal players={matchState.inventories} onClose={handleClosePlayerSelectModal} onSubmit={handlePlayerSelectModalSubmit} />
+        )}
 
-      <div className="loot-container centerLootContainer" onClick={() => {setIsLootModalOpen(true)}}>
-			  Generate Loot
-	    </div>
-
-      <div className="inventory-list">
-        {sortedItems.map(item => (
-          <Item
-          key={item.lootid}
-          id={item.id}
-          name={item.name}
-          description={item.description}
-          value={item.value}
-          image={item.img}
-          type={item.type}
-          count={item.count}
-          rarity={rarityNames[item.rarity]}
-          onRightClick={(e) => handleRightClick(e, item)}
+        <ItemDetailModal
+          isOpen={!!selectedItem}
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
         />
-        ))}
-      </div>
-      <div className="loot-container centerLootContainer last" onClick={handleOpenPlayerSelectModal}>
-			  Distribute loot
-	    </div>
-      {contextMenu && (
-        <ContextMenu
-          position={contextMenu.position}
-          options={contextMenu.options}
-          onClose={handleCloseContextMenu}
-        />
-      )}
-    </div>
-      {isLootModalOpen && (
-        <LootModal
-          onClose={handleLootModalClose}
-          onSubmit={handleLootModalSubmit}
-        />
-      )}
+      
+      </>
+    );
+  }
 
-      {showGoldModal && (
-        <GoldModal prevGold={goldAmount} onSubmit={handleGoldSubmit} onClose={handleCloseGoldModal} />
-      )}
-
-      {isPlayerSelectModalOpen && (
-        <PlayerSelectModal players={matchState.inventories} onClose={handleClosePlayerSelectModal} onSubmit={handlePlayerSelectModalSubmit} />
-      )}
-    
-    </>
-  );
 };
 
 export default LootList;
