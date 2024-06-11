@@ -341,7 +341,10 @@ class LootPool:
         self.nextLootId += 1
 
     def removeLoot(self, loot_id : int):
-        self.loot[loot_id] = None
+        try:
+            del self.loot[loot_id]
+        except KeyError:
+            pass
 
     def getToWait(self):
         results = {}
