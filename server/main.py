@@ -908,7 +908,7 @@ class Client:
         if not self.isDM and not item.isPlayerOwner(self.playerid):
             return False, f"You don't own this item!"
 
-        return True
+        return True, ""
 
 
     def DestroyItem(self, item : int) -> (bool, str):
@@ -987,7 +987,7 @@ class Client:
                             loot_id = msg["loot_id"]
                             player_id = msg["player_id"]
                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
-                            if currentLootPool.items.get(loot_id) is None:
+                            if currentLootPool.loot.get(loot_id) is None:
                                 await self.send(json.dumps({
                                     "type": "error",
                                     "msg": f"Item {loot_id} does not exist!"
@@ -1121,6 +1121,13 @@ class Client:
                                 }))
                                 continue
 
+                            if len(currentLootPool.loot) < 1:
+                                await self.send(json.dumps({
+                                    "type": "error",
+                                    "msg": "You have to add loot to distribute"
+                                }))
+                                continue
+
                             session = Session()
                             try:
                                 for player in selected_players:
@@ -1180,14 +1187,12 @@ class Client:
                             await Game.syncPlayerItem(self.gameid, tmp)
 
                         case "DeleteItem":
-
                             try:
                                 item_id = msg["item_id"]
-                                player_id = msg["player_id"]
                                 session = Session()
                                 current_item = Item.getFromId(item_id, session)
 
-                                if not (self.isDM or (player_id == self.playerid and player_id == current_item.owner)):
+                                if not (self.isDM or (self.playerid  == current_item.owner)):
                                     await self.send(json.dumps({
                                         "type": "error",
                                         "msg": "You do not own this item, therefore you can't destroy it"

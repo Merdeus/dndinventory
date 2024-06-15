@@ -1,4 +1,3 @@
-// PlayerView.js
 import React, { useState, useEffect } from 'react';
 import Inventory from './Inventory';
 import { useMatch } from './MatchContext';
@@ -15,9 +14,8 @@ const PlayerView = () => {
   const lootList = matchState.loot.items || [];
 
   useEffect(() => {
-  
     if (matchState.inventory) {
-      setPlayerInventory(Object.values(matchState.inventory))
+      setPlayerInventory(Object.values(matchState.inventory));
     }
 
     if (matchState.loot && matchState.loot.phase && (matchState.loot.phase === 1 || matchState.loot.phase === 2)) {
@@ -25,7 +23,6 @@ const PlayerView = () => {
     } else {
       setShowLootList(false);
     }
-
   }, [matchState]);
 
   const sendItem = (playerID, itemID) => {
@@ -53,20 +50,30 @@ const PlayerView = () => {
     });
   }
 
+  //         <button className="top-bar-button">Button</button>
 
   return (
-    <div className={`player-view-container ${showLootList ? 'show-loot-list' : ''}`}>
-      <div className="player-view-inventory">
-        <Inventory
-          items={playerInventory}
-          players={Object.values(matchState.game.players)}
-          giveItem={sendItem}
-          deleteItem={deleteItem}
-          sellItem={sellItem}
-        />
+    <div className="player-view-wrapper">
+      <div className="top-bar">
+        <div className="player-info">
+          <span className="player-name">Name: {matchState.player ? matchState.game.players[matchState.player].name : 'Unknown Player'}</span>
+          <span className="player-gold">Gold: {matchState.player ? matchState.game.players[matchState.player].gold : 0}GP</span>
+        </div>
+
       </div>
-      <div className="player-view-loot-list">
-        {showLootList && <LootList items={Object.values(matchState.loot.items)} currentGold={matchState.loot.gold} />}
+      <div className={`player-view-container ${showLootList ? 'show-loot-list' : ''}`}>
+        <div className="player-view-inventory">
+          <Inventory
+            items={playerInventory}
+            players={Object.values(matchState.game.players)}
+            giveItem={sendItem}
+            deleteItem={deleteItem}
+            sellItem={sellItem}
+          />
+        </div>
+        <div className="player-view-loot-list">
+          {showLootList && <LootList items={Object.values(matchState.loot.items)} currentGold={matchState.loot.gold} />}
+        </div>
       </div>
     </div>
   );

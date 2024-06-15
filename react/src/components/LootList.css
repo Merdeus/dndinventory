@@ -267,6 +267,16 @@
     margin-bottom: 0px;
   }
 
+  .centerLootContainer.red {
+    background-color: rgb(189, 3, 3);
+    margin-top: 10px;
+    margin-bottom: 0px;
+  }
+
+  .centerLootContainer.red:hover {
+    background-color: rgb(219, 1, 1);
+  }
+
   .loot-text {
     display: flex;
     align-items: center;

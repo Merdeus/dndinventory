@@ -50,10 +50,10 @@ const Item = ({ id, name, count, description, value, image, rarity, type, onRigh
   useEffect(() => {
 
     if (isLootListItem) {
-      if (matchState.loot.phase == 1) {
+      if (matchState.loot.phase === 1) {
         setShowClaimButton(true);
         setShowVoteButton(false);
-      } else if (matchState.loot.phase == 2) {
+      } else if (matchState.loot.phase === 2) {
         setShowClaimButton(false);
         setShowVoteButton(true);
       } else {
@@ -110,7 +110,16 @@ const Item = ({ id, name, count, description, value, image, rarity, type, onRigh
             </div>
           )
         ) : showVoteButton ? (
-          <button className="loot-vote-button" onClick={(e) => { e.stopPropagation(); lootVote(id); }}>Vote for this item</button>
+
+          matchState.loot.waiting[matchState.player] && !matchState.loot.items[lootItemID].ext.vote[matchState.player] ? (
+
+            <button className="loot-vote-button" onClick={(e) => { e.stopPropagation(); lootVote(id); }}>Vote for this item</button>
+          ) : (
+            <div className="item-loot-text">
+              {matchState.loot.items[lootItemID].ext.vote[matchState.player] ? `You have voted for ${matchState.game.players[matchState.loot.items[lootItemID].ext.vote[matchState.player]].name}` : "You have not voted for anyone on this item"}
+              You have voted 
+            </div>
+          )
         ) : (
           <>
             <div className="item-description">{splitAtFirstNewline(description)}</div>

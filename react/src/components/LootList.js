@@ -6,7 +6,7 @@ import './LootList.css';
 import LootModal from './LootModal';
 import GoldModal from './GoldModal';
 import Item from './Item';
-import PlayerSelectModal from './PlayerSelectModal';
+import {PlayerSelectModal, PlayerVoteModal } from './PlayerSelectModal';
 import ItemDetailModal from './ItemDetailModal';
 
 
@@ -86,6 +86,8 @@ const LootList = ({ items, currentGold, isDM }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isPlayerSelectModalOpen, setIsPlayerSelectModalOpen] = useState(false);
+  const [isPlayerVoteModalOpen, setIsPlayerVoteModalOpen] = useState(false);
+  const [currentVote, setCurrentVote] = useState(null);
   const [goldAmount, setGoldAmount] = useState(currentGold);
   const [showGoldModal, setShowGoldModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -184,6 +186,22 @@ const LootList = ({ items, currentGold, isDM }) => {
     setIsPlayerSelectModalOpen(false);
   }
 
+  const handleClosePlayerVoteModal = () => {
+    setIsPlayerVoteModalOpen(false);
+  }
+
+  const handleOpenPlayerVoteModal = () => {
+    setIsPlayerVoteModalOpen(true);
+  }
+
+  const handlePlayerVoteModalSubmit = (player_id) => {
+    webSocketService.sendMessage({
+      type: 'VoteLootItem',
+      player_id: player_id,
+      loot_id: currentVote,
+    });
+  }
+
   const handlePlayerSelectModalSubmit = (players) => {
     console.log("Distribute loot to players:", players)
     webSocketService.sendMessage({
@@ -219,6 +237,12 @@ const LootList = ({ items, currentGold, isDM }) => {
   const handleDoneWithPhase = () => {
     webSocketService.sendMessage({
       type: 'LootPhaseDone',
+    });
+  };
+
+  const sendAbortLoot = () => {
+    webSocketService.sendMessage({
+      type: 'ClearLoot',
     });
   };
 
@@ -275,9 +299,16 @@ const LootList = ({ items, currentGold, isDM }) => {
           />
           ))}
         </div>
-        <div className="loot-container centerLootContainer last" onClick={handleOpenPlayerSelectModal}>
-          Distribute loot
-        </div>
+        {matchState.loot.phase >= 1 ? (
+          <div className="loot-container centerLootContainer last red" onClick={sendAbortLoot}>
+            Abort loot distribution
+          </div>
+        ) : (
+          <div className="loot-container centerLootContainer last" onClick={handleOpenPlayerSelectModal}>
+            Distribute loot
+          </div>
+        )}
+
         {contextMenu && (
           <ContextMenu
             position={contextMenu.position}
@@ -352,7 +383,10 @@ const LootList = ({ items, currentGold, isDM }) => {
             isLootListItem={true}
             lootItemID={item.lootid} // bah
             lootClaim={() => handleItemClaim(item.lootid)}
-            lootVote={(ply) => handleItemVote(item.lootid, ply)}
+            lootVote={() => {
+              setCurrentVote(item.lootid);
+              handleOpenPlayerVoteModal();
+            }}
           />
           ))}
         </div>
@@ -399,9 +433,9 @@ const LootList = ({ items, currentGold, isDM }) => {
         {showGoldModal && (
           <GoldModal prevGold={goldAmount} onSubmit={handleGoldSubmit} onClose={handleCloseGoldModal} />
         )}
-  
-        {isPlayerSelectModalOpen && (
-          <PlayerSelectModal players={matchState.inventories} onClose={handleClosePlayerSelectModal} onSubmit={handlePlayerSelectModalSubmit} />
+
+        {isPlayerVoteModalOpen && (
+          <PlayerVoteModal players={matchState.game.players} onClose={handleClosePlayerVoteModal} onSubmit={handlePlayerVoteModalSubmit} />
         )}
 
         <ItemDetailModal

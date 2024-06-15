@@ -154,13 +154,12 @@ const DungeonMasterView = () => {
 
   const deleteItem = (item) => {
     console.log('DM: Delete item:', item);
-    toast.info(`Deleted "${item.name}" from ${selectedPlayer}`, {
+    toast.info(`Deleted a Item from ${selectedPlayer}`, {
       autoClose: 3000
     })
     webSocketService.sendMessage({
       type: 'DeleteItem',
-      item_id: item.id,
-      player_id: players.find(p => p.name === selectedPlayer).id,
+      item_id: item
     });
   }
 

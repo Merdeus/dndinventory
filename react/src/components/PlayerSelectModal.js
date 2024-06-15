@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './PlayerSelectModal.css';
+import { useMatch } from './MatchContext';
 
 const PlayerSelectModal = ({ players, onClose, onSubmit }) => {
 
@@ -67,4 +68,59 @@ const PlayerSelectModal = ({ players, onClose, onSubmit }) => {
   );
 };
 
-export default PlayerSelectModal;
+
+const PlayerVoteModal = ({ players, onClose, onSubmit }) => {
+
+  players = Object.values(players);
+  const [selectedPlayer, setSelectedPlayer] = useState(-1);
+  const { matchState, updateMatchState } = useMatch();
+
+  const togglePlayerSelection = (playerId) => {
+    setSelectedPlayer(playerId);
+  };
+
+  const handleCancel = () => {
+    onClose();
+  };
+
+  const handleSubmit = () => {
+
+    if (selectedPlayer === -1) {
+      alert('You must select a player');
+      return;
+    }
+
+    onSubmit(selectedPlayer);
+    onClose();
+  };
+
+  return (
+    <div className="playerselectmodal-overlay">
+      <div className="playerselectmodal">
+        <div className="playerselectmodal-title">Vote for Player</div>
+        <div className="playerselectmodal-subtitle">Select the player who should receive this item</div>
+        <div className="playerselectmodal-list">
+          {players.map((player) => matchState.loot.players.includes(player.id) ? (
+            <div
+              key={player.id}
+              className={`playerselectmodal-player ${selectedPlayer === player.id ? 'selected' : ''}`}
+              onClick={() => togglePlayerSelection(player.id)}
+            >
+              {player.name}
+            </div>
+          ) : null)}
+        </div>
+        <div className="playerselectmodal-button-row">
+          <div className="playerselectmodal-button cancel-button" onClick={handleCancel}>
+            Cancel
+          </div>
+          <div className="playerselectmodal-button submit-button" onClick={handleSubmit}>
+            Submit
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export {PlayerSelectModal, PlayerVoteModal};
