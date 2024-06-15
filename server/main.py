@@ -32,7 +32,9 @@ import base64
 
 load_dotenv()
 
+logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 engine = create_engine('sqlite:///players.db')
 Base = sqlalchemy.orm.declarative_base()
@@ -517,6 +519,10 @@ class LootPool:
             session.close()
 
     async def sendLootList(self, sendToAll=False):
+
+        if True:
+            return
+
         global clientList
         to_send_list = {
             "type": "loot_list_update",
@@ -1800,7 +1806,7 @@ if __name__ == "__main__":
         print("No SSL certificate provided")
 
     # create websocket server
-    start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None, ssl=ssl_context)
+    start_server = websockets.serve(newserver, '0.0.0.0', 8273, ping_interval=None, ssl=ssl_context, max_queue=1024, read_limit=2**20, write_limit=2**20)
     asyncio.get_event_loop().run_until_complete(start_server)
 
     try:

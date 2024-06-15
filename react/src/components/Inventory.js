@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMatch } from './MatchContext';
 import './Inventory.css';
 import Item from './Item';
+import ItemDetailModal from './ItemDetailModal';
 
 const rarityNames = {
   0: 'mundane',
@@ -91,6 +92,7 @@ const ContextMenu = ({ position, options, onClose }) => {
 const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellItem }) => {
   const [sortType, setSortType] = useState('id');
   const [contextMenu, setContextMenu] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const { matchState } = useMatch();
 
   if (!deleteItem)
@@ -108,6 +110,11 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellIte
         return b.value - a.value;
     }
   });
+
+  const handleItemClick = (item) => {
+    console.log('Item clicked:', item);
+    setSelectedItem(item);
+  };
 
   const handleRightClick = (e, item) => {
     const options = [];
@@ -153,7 +160,6 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellIte
     giveItem(id, itemId);
   };
 
-
   return (
     <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
       <div className="inventory-header">
@@ -180,6 +186,7 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellIte
             count={item.count}
             rarity={rarityNames[item.rarity]}
             onRightClick={(e) => handleRightClick(e, item)}
+            onClick={() => handleItemClick(item)}
           />
         ))}
       </div>
@@ -191,6 +198,12 @@ const Inventory = ({ id, items, players, isDMView, deleteItem, giveItem, sellIte
           onClose={handleCloseContextMenu}
         />
       )}
+
+      <ItemDetailModal
+        isOpen={!!selectedItem}
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+      />
 
     </div>
   );
