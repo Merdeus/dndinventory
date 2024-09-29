@@ -33,7 +33,7 @@ from enum import Enum, auto
 
 
 from objects import Game, Player, Item, ItemPrefab, Session
-from util import NotFoundByIDException, LogLevel, loglevel_prefixes, ItemRarity, ItemType, _decrypt, _encrypt, clientList, client_list
+from util import NotFoundByIDException, LogLevel, loglevel_prefixes, ItemRarity, ItemType, _decrypt, _encrypt, clientList, client_list, global_sync_token_key
 from log import log, logErrorAndNotify
 from client import Client, sendMessageToPlayer
 from actions import handle_adv_action
@@ -433,14 +433,8 @@ async def register(request: Request, registration_token: str):
 
     res = registration_token_list.pop(registration_token, None)
 
-
-
     if res is None:
         raise HTTPException(status_code=400, detail="Invalid registration token!")
-
-    # only test, push res back
-    registration_token_list[registration_token] = res
-
 
     ip = request.client.host
     if res["ip"] != ip:
@@ -464,7 +458,7 @@ async def register(request: Request, registration_token: str):
         try:
 
             # first message is the registration message
-            yield {"event": "register", "data": json.dumps({"clientid": clientid, "playerid": res["playerid"], "token": new_token})}
+            yield {"event": "register", "data": json.dumps({"clientid": clientid, "playerid": res["playerid"], "token": new_token, "resynctoken": client.generateReSyncToken()})}
 
             while True:
                 msg = await client.queue.get()
@@ -627,14 +621,38 @@ async def handle_action(request: Request):
         # return {"status": "Session created successfully"}
 
     elif action_type == "joinSession":
-        # Example action: join a session
         return action_joinSession(data)
 
     elif action_type == "selectPlayer":
         return action_selectPlayer(data, request.client.host)
 
     elif action_type == "resync":
-        raise HTTPException(status_code=400, detail="Not implemented yet")
+
+        sync_token = data.get("sync_token", None)
+
+        if sync_token is None:
+            raise HTTPException(status_code=400, detail="Invalid request!")
+
+        isValid, dec_token = ValidateSyncToken(sync_token)
+        if not isValid:
+            raise HTTPException(status_code=400, detail="Invalid request!")
+
+        registration_token = generateToken(dec_token["playerid"], dec_token["gameid"], request.client.host)
+        if registration_token is None or registration_token in registration_token_list:
+            raise HTTPException(status_code=400, detail="Invalid request!")
+        
+        registration_token_list[registration_token] = {
+            "ip" : request.client.host,
+            "playerid": dec_token["playerid"],
+            "gameid": dec_token["gameid"]
+        }
+
+        return {
+            "type": "register",
+            "playerid": dec_token["playerid"],
+            "registration_token": registration_token
+        }
+        
 
 
     # More advanced actions which require an established EventSource connection
@@ -642,7 +660,7 @@ async def handle_action(request: Request):
     provided_token = data.get("token")
     ip = request.client.host
     if provided_token is None or ip is None:
-        raise HTTPException(status_code=400, detail="Invalid request! 1")
+        raise HTTPException(status_code=400, detail="Invalid request!")
 
     server_side_identifier = generateToken("server-identifier-", provided_token, ip, False)
     

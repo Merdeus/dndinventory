@@ -63,6 +63,7 @@ function Game() {
         callback: (message) => {
           console.log("registration token received:", message.registration_token);
           webSocketService.registration_token = message.registration_token;
+          //webSocketService.syn
 
           webSocketService.connect();
 

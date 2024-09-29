@@ -81,9 +81,42 @@ class SSEService {
       this.disconnect();
     };
 
-    this.eventSource.
 
     console.log('SSEService: Connected to server');
+  }
+
+
+  retrieveNewRegistrationToken() {
+
+    if (!this.syncToken) {
+      console.error("SSEService: No sync token found. Can't retrieve new registration token");
+      return;
+    }
+
+    this.sendMessage({
+      type: "resync",
+      sync_token: this.syncToken
+    });
+  }
+
+
+  reconnectionHandler = () => {
+
+    if (!this.connection_lost) {
+      return;
+    }
+
+    console.log('SSEService: Trying to reconnect');
+
+
+
+
+
+    // call itself after 5 seconds
+    setTimeout(() => {
+      this.reconnectionHandler();
+    }, 5000);
+
   }
 
   handleMessage = (event) => {
@@ -162,6 +195,7 @@ class SSEService {
       this.connection_lost = true;
       if (this.callbackConnectionLost) {
         this.callbackConnectionLost(true);
+        this.reconnectionHandler();
       }
       this.eventSource.close();
       this.eventSource = null;
