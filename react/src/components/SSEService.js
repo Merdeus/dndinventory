@@ -35,8 +35,13 @@ class SSEService {
 
     this.eventSource = new EventSource(url + "/" + this.registration_token);
     
-    //this.eventSource.onmessage = this.handleMessage;
-    
+    // send empty GetGameInfo message to get the game info
+    this.eventSource.addEventListener("register", (event) => {
+      this.sendMessage({
+        type: "GetGameInfo",
+      });
+    });
+
     this.messageHandlers.forEach(handler => {
       this.eventSource.addEventListener(handler.messageType, handler.callback);
     });
