@@ -108,7 +108,7 @@ function Game() {
         identifier: 'item_removal_handler',
         messageType: "item_removal",
         callback: (message) => {
-          console.log("Item Removal:", message.msg, matchState.inventory, message.msg.itemid, message.msg.itemid in matchState.inventory);
+          console.log("Item Removal:", message.msg, matchState.inventory, message.msg.itemid);
           if (matchState.isDM) {
             delete matchState.inventories[message.msg.playerid].inventory[message.msg.itemid];
           } else {
