@@ -1104,7 +1104,7 @@ async def register(request: Request, registration_token: str):
             while True:
                 msg = await client.queue.get()
                 yield {
-                    "event": msg.type,
+                    "event": msg["type"] if "type" in msg else msg["event"],
                     "data": json.dumps(msg)
                 }
         except asyncio.CancelledError:
