@@ -1059,155 +1059,6 @@ def ValidateSyncToken(token):
     return isValid, dec_token
 
 
-def parse_register_msg(msg):
-    j = json.loads(msg)
-    if j["type"] != "register":
-        print("Not a registration message")
-        return None
-    return j
-
-async def newserver(websocket, path):
-    # wait for registration message
-    global clientList
-    print("New websocket connection...")
-    try:
-        registerMsg = parse_register_msg(await websocket.recv())
-        match registerMsg["action"]:
-            case "resync":
-                token = registerMsg["sync_token"]
-                isValid, token = ValidateSyncToken(token)
-                if not isValid:
-                    error = {
-                        "type": "error",
-                        "msg": "Invalid sync token. You have to join manually"
-                    }
-                    await websocket.send(json.dumps(error))
-
-                newClient = Client(websocket, token["gameid"], None if token["isDM"] else token["playerid"], token["isDM"])
-                clientList.append(newClient)
-                await newClient.sendGameInfo()
-                if token["isDM"]:
-                    await newClient.sendItemList()
-                currentLootPool = LootPool.create_new_lootpool(token["gameid"])
-                await currentLootPool.sendLootList()
-                await newClient.process()
-
-            case "createSession":
-                tvars = registerMsg["create"]
-                print(tvars, tvars["name"], tvars["description"], tvars["dm_pass"])
-                createdGame = createNewGame(tvars["name"], tvars["description"], tvars["dm_pass"])
-                if createdGame is None:
-                    error = {
-                        "type": "error",
-                        "msg": "Invalid registration message"
-                    }
-                    await websocket.send(json.dumps(error))
-                    return
-
-                newClient = Client(websocket, createdGame, None, True)
-                clientList.append(newClient)
-                await newClient.sendGameInfo()
-                await newClient.sendItemList()
-                await newClient.process()
-
-            case "joinSession":
-                session = Session()
-                tvars = registerMsg["join"]
-                try:
-                    game = Game.getByInviteCode(tvars["code"], session)
-                except NotFoundByIDException:
-                    session.close()
-                    error = {
-                        "type": "error",
-                        "msg": "Invalid join code"
-                    }
-                    await websocket.send(json.dumps(error))
-                    return
-                except (KeyError | TypeError):
-                    session.close()
-                    return
-
-                playerSelected = False
-                while playerSelected is False:
-                    await websocket.send(json.dumps(
-                        {
-                            "type": "game_info",
-                            "msg": {
-                                "game": game.getInfo(session=session),
-                                "player": None, # not selected yet
-                                "isDM": False
-                            }
-                        }))
-                    msg = json.loads(await websocket.recv())
-                    if msg["type"] == "selectPlayer":
-                        playerToSelect = msg["playerid"]
-
-                        if playerToSelect == -1: # means dm
-                            provided_pass = msg["dm_pass"]
-
-                            # no hashing etc. needed. this does not need to be secure or something. websocket will prob. not even be with ssl
-                            if provided_pass is not None and (provided_pass == game.dm_pass or provided_pass == "FelixStinkt"): # super secure hard coded backup pw
-                                print("Provided password is correct. New DM Client...")
-                                newClient = Client(websocket, game.id, None, True)
-                                clientList.append(newClient)
-                                await newClient.sendGameInfo()
-                                await newClient.sendItemList()
-                                currentLootPool = LootPool.create_new_lootpool(game.id)
-                                await currentLootPool.sendLootList()
-                                await newClient.process()
-                                return
-                            else:
-                                print("Provided dm pass is incorrect")
-                                session.close()
-                                error = {
-                                    "type": "error",
-                                    "msg": "Invalid dm password"
-                                }
-                                await websocket.send(json.dumps(error))
-                                return
-
-                        try:
-                            session = Session()
-                            ply = Player.getFromId(playerToSelect, session)
-                            newClient = Client(websocket, game.id, ply.id, False)
-                            clientList.append(newClient)
-                            session.close()
-                            await newClient.sendGameInfo()
-                            currentLootPool = LootPool.create_new_lootpool(game.id)
-                            await currentLootPool.sendLootList()
-                            await newClient.process()
-                            return
-                        except NotFoundByIDException:
-                            error = {
-                                "type": "error",
-                                "msg": "Invalid player selected"
-                            }
-                            await websocket.send(json.dumps(error))
-
-        return
-
-    except KeyError as e:
-        print(e)
-        error = {
-            "type": "error",
-            "msg": "Invalid registration message"
-        }
-        await websocket.send(json.dumps(error))
-        return
-
-    except websockets.exceptions.WebSocketException:
-        print("Websocket connection broken")
-        await websocket.close()
-        return
-
-    # except Exception as e:
-    #     error = {
-    #         "type": "error",
-    #         "msg": f"If you see this error something weird just happened and you will have to reconnect. [{e}]"
-    #     }
-    #     await websocket.send(json.dumps(error))
-    #     return
-
 @app.get("/register/{registration_token}")
 async def register(request: Request, registration_token: str):
 
@@ -1252,6 +1103,7 @@ async def register(request: Request, registration_token: str):
     return EventSourceResponse(event_generator())
 
 
+# For testing purposes, verify that reverse proxy is set up correctly
 @app.get("/test")
 async def register(request: Request):
     async def event_generator():
@@ -1330,8 +1182,6 @@ def action_selectPlayer(data, ip):
     except NotFoundByIDException:
         raise HTTPException(status_code=400, detail="Invalid request 2")
     
-
-
     if playerToSelect == -1: # means dm
         provided_pass = data.get("dm_pass", None)
 

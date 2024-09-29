@@ -239,3 +239,9 @@ async def action_SellItem(client : Client, playerid : int, data, session : sqlal
     return True, message
 
 register_action("SellItem", action_SellItem)
+
+async def action_GetGameInfo(client : Client, playerid : int, data, session : sqlalchemy.orm.Session):
+    await client.sendGameInfo()
+    return True, ""
+
+register_action("GetGameInfo", action_GetGameInfo)

@@ -92,6 +92,61 @@ class Client:
 
 
 
+#     async def sendGameInfo(self):
+#         print(f"Sending game info to client with playerid {self.playerid}")
+#         session = Session()
+#         game = Game.getFromId(self.gameid, session)
+
+#         data = {
+#             "type" : "game_info",
+#             "msg" : {
+#                 "game": game.getInfo(session=session),
+#                 "player": self.playerid,
+#                 "isDM": self.isDM,
+#                 "inventory": self.getInventory() if not self.isDM else None,
+#                 "inventories" : self.getInventories() if self.isDM else None,
+#             }
+#         }
+
+#         session.close()
+#         await self.send(json.dumps(data))
+
+#     async def sendItemList(self):
+#         await self.send(json.dumps({
+#             "type": "game_info",
+#             "msg": {
+#                 "itemlist": ItemPrefab.getList(self.gameid)
+#             }
+#         }))
+
+
+
+
+    async def sendGameSync(self, session):
+        print(f"Sending game sync to client with playerid {self.playerid}")
+        game = Game.getFromId(self.gameid, session)
+
+        await self.send({
+            "type" : "game_info",
+            "msg" : {
+                "game": game.getInfo(session=session),
+                "player": self.playerid,
+                "isDM": self.isDM,
+                "inventory": self.getInventory() if not self.isDM else None,
+                "inventories" : self.getInventories() if self.isDM else None,
+            }
+        })
+
+        if self.isDM:
+            await self.send({
+                "type": "game_info",
+                "msg": {
+                    "itemlist": ItemPrefab.getList(self.gameid)
+                }
+            })
+
+
+
 
     async def send(self, message):
         await self.queue.put(message)
