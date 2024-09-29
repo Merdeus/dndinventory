@@ -1278,6 +1278,10 @@ async def handle_action(request: Request):
 
     server_side_identifier = hash(ip + str(provided_token) + str(random_val))
     
+    #print the current server side identifier and every in the list
+    print(server_side_identifier)
+    print(token_list)
+
     if server_side_identifier not in token_list or token_list[server_side_identifier].token != provided_token:
         raise HTTPException(status_code=400, detail="Invalid request!")
     
