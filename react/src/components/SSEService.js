@@ -86,6 +86,7 @@ class SSEService {
   }
 
   addMessageHandler(handler) {
+    this.messageHandlers = this.messageHandlers.filter(h => h.identifier !== handler.identifier);
     this.messageHandlers.push(handler);
   }
 
