@@ -1272,11 +1272,11 @@ async def handle_action(request: Request):
     # More advanced actions which require an established EventSource connection
     
     provided_token = data.get("token")
+    ip = request.client.host
     if provided_token is None or ip is None:
         raise HTTPException(status_code=400, detail="Invalid request! 1")
 
-    ip = request.client.host
-    server_side_identifier = hash(ip + provided_token + random_val)
+    server_side_identifier = hash(ip + str(provided_token) + str(random_val))
     
     if server_side_identifier not in token_list or token_list[server_side_identifier].token != provided_token:
         raise HTTPException(status_code=400, detail="Invalid request!")
