@@ -132,8 +132,8 @@ class Client:
                 "game": game.getInfo(session=session),
                 "player": self.playerid,
                 "isDM": self.isDM,
-                "inventory": self.getInventory() if not self.isDM else None,
-                "inventories" : self.getInventories() if self.isDM else None,
+                "inventory": self.getInventory(session) if not self.isDM else None,
+                "inventories" : self.getInventories(session) if self.isDM else None,
             }
         })
 
@@ -141,7 +141,7 @@ class Client:
             await self.send({
                 "type": "game_info",
                 "msg": {
-                    "itemlist": ItemPrefab.getList(self.gameid)
+                    "itemlist": ItemPrefab.getList(self.gameid, session)
                 }
             })
 

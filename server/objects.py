@@ -148,8 +148,7 @@ class ItemPrefab(Base):
             return tmp
 
     @staticmethod
-    def getList(gameid : int):
-        session = Session()
+    def getList(gameid : int, session):
         tmp = session.query(ItemPrefab).filter_by(gameid=gameid).all()
         res = [
         {
@@ -163,7 +162,6 @@ class ItemPrefab(Base):
             'stackable': i.stackable,
             'unique': i.unique
         } for i in tmp]
-        session.close()
         return res
 
 class GameSettings(Base):
