@@ -112,8 +112,8 @@ async def action_DeleteItem(client : Client, playerid : int, data, session : sql
     curr_player = Player.getFromId(current_item.owner, session)
 
 
-    log_msg = f"Item {current_item.name} from {curr_player.name} has been deleted by {"Dungeon Master" if client.isDM else "Player"}"
-    target_msg = f"Item {current_item.name} has been deleted by {"Dungeon Master" if client.isDM else "yourself"}"
+    log_msg = f"Item {current_item.name} from {curr_player.name} has been deleted by {'Dungeon Master' if client.isDM else 'Player'}"
+    target_msg = f"Item {current_item.name} has been deleted by {'Dungeon Master' if client.isDM else 'yourself'}"
 
     if not (client.isDM or (client.playerid  == current_item.owner)):
         return False, "You are not allowed to delete this item"
@@ -280,5 +280,25 @@ async def action_ToggleSelling(client : Client, playerid : int, data, session : 
             })
 
     return True, f"(GameID:{current_game.id}) Selling has been toggled to " + ("enabled" if current_game.allow_selling else "disabled")
+
 register_action("ToggleSelling", action_ToggleSelling)
 
+
+async def action_SetPlayerGold(client : Client, playerid : int, data, session : sqlalchemy.orm.Session):
+    if not client.isDM:
+        return False, "You are not a DM, you can't set player gold"
+    
+    player_id = data.get("player_id", None)
+    gold = data.get("gold", None)
+
+    player = Player.getFromId(player_id, session)
+
+    if player is None or gold is None:
+        return False, "Player or gold not found"
+    
+    player.gold = gold
+    session.commit()
+    await Game.syncPlayerGold(client.gameid, player)
+    return True, f"Player {player.name} gold has been set to {gold}"
+
+register_action("SetPlayerGold", action_SetPlayerGold)
