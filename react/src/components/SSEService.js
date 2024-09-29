@@ -15,6 +15,8 @@ class SSEService {
     this.token = null;
     this.registration_token = null;
 
+    this.connection_lost = false;
+
   }
 
   connect(url) {
@@ -35,6 +37,11 @@ class SSEService {
 
     this.eventSource = new EventSource(url + "/" + this.registration_token);
     
+    this.eventSource.onopen = (e) => {
+      console.log("The connection has been established. Testing");
+    };
+    
+
     // send empty GetGameInfo message to get the game info
     this.eventSource.addEventListener("register", (event) => {
 
@@ -61,8 +68,11 @@ class SSEService {
 
     this.eventSource.onerror = (error) => {
       console.error('SSEService: Error connecting to server', error);
+      this.connection_lost = true;
       this.disconnect();
     };
+
+    this.eventSource.
 
     console.log('SSEService: Connected to server');
   }
@@ -140,6 +150,7 @@ class SSEService {
 
   disconnect() {
     if (this.eventSource) {
+      this.connection_lost = true;
       this.eventSource.close();
       this.eventSource = null;
     }

@@ -5,6 +5,17 @@ import { useSSE } from './SSEContext';
 import LootList from './LootList';
 import './PlayerView.css';
 
+
+
+const Topbar = ({ message }) => {
+  return (
+    <div className="topbar">
+      {message}
+    </div>
+  );
+};
+
+
 const PlayerView = () => {
   const [showLootList, setShowLootList] = useState(false);
   const { matchState } = useMatch();
@@ -12,6 +23,9 @@ const PlayerView = () => {
 
   const [playerInventory, setPlayerInventory] = useState([]);
   const lootList = matchState.loot.items || [];
+
+  const [isConnected, setIsConnected] = useState(false);
+
 
   useEffect(() => {
     if (matchState.inventory) {
@@ -54,6 +68,7 @@ const PlayerView = () => {
 
   return (
     <div className="player-view-wrapper">
+      {!isConnected && <Topbar message="Connection error! Trying to reconnect..." />}
       <div className="top-bar">
         <div className="player-info">
           <span className="player-name">Name: {matchState.player ? matchState.game.players[matchState.player].name : 'Unknown Player'}</span>
