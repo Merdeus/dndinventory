@@ -1077,6 +1077,9 @@ async def register(request: Request, registration_token: str):
     new_token = hash(int.from_bytes(os.urandom(8), byteorder="big"))
     new_server_side_identifier = hash(ip + str(new_token) + str(random_val))
 
+    print(f"New client registered with token {new_token} and server side identifier {new_server_side_identifier}")
+    print(ip + str(new_token) + str(random_val))
+
     client = Client(new_server_side_identifier, res["gameid"], res["playerid"], False if res["playerid"] != -1 else True)
 
     clientid = next_client_id
@@ -1279,6 +1282,7 @@ async def handle_action(request: Request):
     server_side_identifier = hash(ip + str(provided_token) + str(random_val))
     
     #print the current server side identifier and every in the list
+    print(ip + str(provided_token) + str(random_val))
     print(server_side_identifier)
     print(token_list)
 
