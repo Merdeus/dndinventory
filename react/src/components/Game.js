@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSSE } from './SSEContext';
 import {SelectGame} from './selectGame';
 import { SelectPlayer } from './SelectPlayer';
@@ -19,6 +19,12 @@ function Game() {
     const [retryConnecting, setRetryConnecting] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     
+    const matchStateRef = useRef(matchState);
+
+    useEffect(() => {
+      matchStateRef.current = matchState;
+    }, [matchState]);
+
     useEffect(() => {
   
       webSocketService.addCleanUpHandler({identifier: "Main_GameCleanup", callback: () => {
@@ -109,13 +115,13 @@ function Game() {
         messageType: "item_removal",
         callback: (message) => {
 
-          const { matchState, updateMatchState, updateInventories, updateInventory } = useMatch();
+          const currentMatchState = matchStateRef.current;
 
-          console.log("Item Removal:", message.msg, matchState);
-          if (matchState.isDM) {
-            delete matchState.inventories[message.msg.playerid].inventory[message.msg.itemid];
+          console.log("Item Removal:", message.msg, currentMatchState);
+          if (currentMatchState.isDM) {
+            delete currentMatchState.inventories[message.msg.playerid].inventory[message.msg.itemid];
           } else {
-            delete matchState.inventory[message.msg.itemid];
+            delete currentMatchState.inventory[message.msg.itemid];
           }
           updateMatchState([]); // stoopid
         }
