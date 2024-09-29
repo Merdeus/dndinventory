@@ -1215,6 +1215,7 @@ async def register(request: Request, registration_token: str):
 
     res = registration_token_list.pop(registration_token, None)
 
+
     if res is None:
         raise HTTPException(status_code=400, detail="Invalid registration token!")
 
@@ -1237,12 +1238,12 @@ async def register(request: Request, registration_token: str):
         try:
 
             # first message is the registration message
-            yield {"type": "register", "clientid": clientid, "playerid": res["playerid"], "token": new_token}
+            yield {"event": "register", "data": json.dumps({"clientid": clientid, "playerid": res["playerid"], "token": new_token})}
 
             while True:
                 msg = await client.queue.get()
                 yield {
-                    "type": msg.type,
+                    "event": msg.type,
                     "data": json.dumps(msg)
                 }
         except asyncio.CancelledError:
