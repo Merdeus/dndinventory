@@ -26,6 +26,13 @@ const PlayerView = () => {
 
   const [isConnected, setIsConnected] = useState(false);
 
+  const callbackIsConnected = (val) => {
+    setIsConnected(val);
+  }
+
+  useEffect(() => {
+    webSocketService.callbackConnectionLost = callbackIsConnected;
+  }, []);
 
   useEffect(() => {
     if (matchState.inventory) {

@@ -16,6 +16,7 @@ class SSEService {
     this.registration_token = null;
 
     this.connection_lost = false;
+    this.callbackConnectionLost = null;
 
   }
 
@@ -38,7 +39,12 @@ class SSEService {
     this.eventSource = new EventSource(url + "/" + this.registration_token);
     
     this.eventSource.onopen = (e) => {
-      console.log("The connection has been established. Testing");
+      if (this.connection_lost) {
+        this.connection_lost = false;
+        if (this.callbackConnectionLost) {
+          this.callbackConnectionLost(false);
+        }
+      };
     };
     
 
@@ -69,6 +75,9 @@ class SSEService {
     this.eventSource.onerror = (error) => {
       console.error('SSEService: Error connecting to server', error);
       this.connection_lost = true;
+      if (this.callbackConnectionLost) {
+        this.callbackConnectionLost(true);
+      }
       this.disconnect();
     };
 
@@ -151,6 +160,9 @@ class SSEService {
   disconnect() {
     if (this.eventSource) {
       this.connection_lost = true;
+      if (this.callbackConnectionLost) {
+        this.callbackConnectionLost(true);
+      }
       this.eventSource.close();
       this.eventSource = null;
     }
