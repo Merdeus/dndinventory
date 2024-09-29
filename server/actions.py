@@ -168,7 +168,7 @@ async def action_EditItem(client : Client, playerid : int, data, session : sqlal
     if edit_item(item, session) is None:
         return False, "Failed to edit item"
     
-    await Game.updateItemList(client.gameid)
+    await Game.updateItemList(client.gameid, session)
 
     for item in Game.getAllItemsWithPrefabID(client.gameid, item["id"], session):
         await Game.syncPlayerItem(client.gameid, item)
@@ -224,7 +224,7 @@ async def action_CreateItem(client : Client, playerid : int, data, session : sql
     return True, "Item created successfully"
 
 register_action("CreateItem", action_CreateItem)
-
+register_action("AddItem", action_CreateItem)
 
 async def action_SellItem(client : Client, playerid : int, data, session : sqlalchemy.orm.Session):
     if client.isDM:
@@ -238,7 +238,7 @@ async def action_SellItem(client : Client, playerid : int, data, session : sqlal
     if item.isQuestItem():
         return False, f"You can't sell a quest item!"
     if not client.isAllowedToSell(item, session):
-        return False, f"You currently are not able to sell anything."
+        return False, f"You are not able to sell anything currently."
 
     ply = Player.getFromId(client.playerid, session)
     ply.gold += (item.value * max(item.count,1))

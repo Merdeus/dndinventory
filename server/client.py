@@ -113,6 +113,14 @@ class Client:
                 }
             })
 
+    async def sendItemList(self, session):
+        if self.isDM:
+            await self.send({
+                "type": "game_info",
+                "msg": {
+                    "itemlist": ItemPrefab.getList(self.gameid, session)
+                }
+            })
 
     async def send(self, message):
         await self.queue.put(message)

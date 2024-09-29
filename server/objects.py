@@ -266,7 +266,6 @@ class Game(Base):
                 continue
 
             await client.sendItemList()
-        remove_disconnected_clients()
 
     @staticmethod
     async def syncPlayerGold(gameid : int, player : Player):

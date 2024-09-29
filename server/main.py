@@ -346,7 +346,9 @@ def run_import_script(gameid, send_callback):
                 "type": "error",
                 "msg": f"ImportNewItems failed: {str(e)}"
             }))
-        await Game.updateItemList(gameid)
+        session = Session()
+        await Game.updateItemList(gameid, session)
+        session.close()
     asyncio.run(async_run())
 
 # class Client:
