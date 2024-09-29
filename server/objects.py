@@ -254,7 +254,7 @@ class Game(Base):
         remove_disconnected_clients()
 
     @staticmethod
-    async def updateItemList(gameid):
+    async def updateItemList(gameid, session):
         global client_list
         print(f"Updating ItemList for all dm clients", len(client_list))
         for _, client in client_list.items():
@@ -265,13 +265,13 @@ class Game(Base):
             if client.gameid != gameid:
                 continue
 
-            await client.sendItemList()
+            await client.sendItemList(session)
 
     @staticmethod
     async def syncPlayerGold(gameid : int, player : Player):
-        global clientList
+        global client_list
         print(f"Synchronising gold from player {player}")
-        for client in clientList:
+        for _, client in client_list.items():
             if client.gameid != gameid:
                 continue
 

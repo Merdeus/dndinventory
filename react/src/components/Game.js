@@ -75,17 +75,20 @@ function Game() {
         messageType: "inventory_update",
         callback: (message) => {
           console.log("inventory_update:", message.msg);
-          if (matchState.isDM) {
-            if (matchState.inventories.hasOwnProperty(message.msg.playerid)) {
+
+          const currentMatchState = matchStateRef.current;
+
+          if (currentMatchState.isDM) {
+            if (currentMatchState.inventories.hasOwnProperty(message.msg.playerid)) {
               console.log("Player exists on client. Updating inventory.")
-              matchState.inventories[message.msg.playerid].inventory[message.msg.itemid] = message.msg.item;
+              currentMatchState.inventories[message.msg.playerid].inventory[message.msg.itemid] = message.msg.item;
             } else {
               console.log("Player does not exist on client. Aborting.")
               return;
             }
             updateMatchState([]);
           } else {
-            matchState.inventory[message.msg.itemid] = message.msg.item;
+            currentMatchState.inventory[message.msg.itemid] = message.msg.item;
             updateMatchState([]);
           }
         }

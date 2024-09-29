@@ -302,3 +302,255 @@ async def action_SetPlayerGold(client : Client, playerid : int, data, session : 
     return True, f"Player {player.name} gold has been set to {gold}"
 
 register_action("SetPlayerGold", action_SetPlayerGold)
+
+
+
+
+
+
+
+
+#                         case "ImportNewItems":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+
+#                             # cooldown
+#                             global last_imports
+#                             print("ImportNewItems: ", last_imports, self.socket.remote_address[0] in last_imports)
+#                             if self.socket.remote_address[0] in last_imports:
+#                                 if last_imports[self.socket.remote_address[0]] > (time.time() - 600):
+#                                     await self.send(json.dumps({
+#                                         "type": "error",
+#                                         "msg": "Import cooldown. Chill!"
+#                                     }))
+#                                     await self.send(json.dumps({
+#                                         "type": "items_imported",
+#                                         "success": False
+#                                     }))
+#                                     continue
+#                             last_imports[self.socket.remote_address[0]] = time.time()
+
+#                             # ignore which kind of items you actually want to import because there currently is only dnd items
+#                             try:
+#                                 threading.Thread(target=run_import_script, args=(self.gameid, self.send)).start()
+
+#                             except KeyError as e:
+#                                 print("ImportNewItems Error:", e)
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Invalid ImportNewItems message"
+#                                 }))
+
+#                         case "CreatePlayer":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+#                             try:
+#                                 print(msg)
+#                                 player_name = msg["player_name"]
+#                                 player_gold = msg["gold"]
+#                                 if player_name is None or player_name == "" or player_gold is None:
+#                                     raise KeyError
+
+#                                 player_gold = max(0, player_gold)
+#                                 await registerNewPlayer(player_name, self.gameid, player_gold)
+#                             except KeyError as e:
+#                                 print(e)
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Invalid CreatePlayer message"
+#                                 }))
+
+
+
+
+
+
+
+
+
+
+#                         case "ClaimLootItem":
+#                             print(f"CLAIMLOOTITEM {msg}")
+#                             loot_id = msg["loot_id"]
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             if currentLootPool.loot.get(loot_id) is None:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": f"Item {loot_id} does not exist!"
+#                                 }))
+#                                 continue
+#                             currentLootPool.setClaim(loot_id, self.playerid)
+#                             await currentLootPool.sendLootList()
+
+#                         case "VoteLootItem":
+
+#                             loot_id = msg["loot_id"]
+#                             player_id = msg["player_id"]
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             if currentLootPool.loot.get(loot_id) is None:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": f"Item {loot_id} does not exist!"
+#                                 }))
+#                                 continue
+#                             session = Session()
+#                             try:
+#                                 target_player = Player.getFromId(player_id, session)
+#                                 if target_player.gameid != self.gameid:
+#                                     await self.send(json.dumps({
+#                                         "type": "error",
+#                                         "msg": f"Invalid VoteLootitem!"
+#                                     }))
+#                                     return
+#                                 try:
+#                                     currentLootPool.setVote(loot_id, self.playerid, player_id)
+#                                 except:
+#                                     print("meh")
+#                                 await currentLootPool.sendLootList()
+#                             except NotFoundByIDException:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": f"Invalid VoteLootitem!"
+#                                 }))
+#                                 continue
+#                             finally:
+#                                 session.close()
+
+#                         case "LootPhaseDone":
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             if currentLootPool.phase != LootPool.Phase.CLAIM and currentLootPool.phase != LootPool.Phase.VOTE:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Invalid request"
+#                                 }))
+#                                 continue
+
+#                             if currentLootPool.handleNewFinish(self.playerid):
+#                                 currentLootPool.nextPhase()
+
+#                             await currentLootPool.sendLootList()
+
+#                         case "AddLootItem":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+
+#                             item_id = msg["item_id"]
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+
+#                             if currentLootPool.phase.value != 0:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "You can only add loot during the preparations."
+#                                 }))
+#                                 continue
+
+#                             currentLootPool.addLoot(item_id)
+#                             await currentLootPool.sendLootList()
+
+#                         case "RemoveLootItem":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+
+#                             loot_id = msg["loot_id"]
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             currentLootPool.removeLoot(loot_id)
+#                             await currentLootPool.sendLootList()
+
+#                         case "GenerateLootItems":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+
+#                             countList = msg["count_list"]
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             currentLootPool.generateRandomLoot(countList)
+#                             await currentLootPool.sendLootList()
+
+#                         case "SetLootGold":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             currentLootPool.gold = msg["loot_gold"]
+#                             await currentLootPool.sendLootList()
+
+
+#                         case "ClearLoot":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+#                             LootPool.delete_by_gameid(self.gameid)
+#                             currentLootPool = LootPool.create_new_lootpool(self.gameid)
+#                             await currentLootPool.sendLootList()
+
+#                         case "DistributeLoot":
+#                             if not self.isDM:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Illegal operation"
+#                                 }))
+#                                 return
+
+#                             currentLootPool = LootPool.find_by_gameid(self.gameid)
+#                             if currentLootPool is None:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "There is no active lootpool"
+#                                 }))
+#                                 continue
+
+#                             selected_players = msg["players"]
+#                             if len(selected_players) < 1:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "You have to select more than one player"
+#                                 }))
+#                                 continue
+
+#                             if len(currentLootPool.loot) < 1:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "You have to add loot to distribute"
+#                                 }))
+#                                 continue
+
+#                             session = Session()
+#                             try:
+#                                 for player in selected_players:
+#                                     Player.getFromId(player, session)
+#                             except NotFoundByIDException:
+#                                 await self.send(json.dumps({
+#                                     "type": "error",
+#                                     "msg": "Invalid player in player selection"
+#                                 }))
+#                                 continue
+
+#                             currentLootPool.players = [int(i) for i in selected_players]
+#                             currentLootPool.nextPhase()
+#                             await currentLootPool.sendLootList()
+#                             session.close()
