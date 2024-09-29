@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Inventory from './Inventory';
 import { useMatch } from './MatchContext';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import ItemList from './ItemList';
 import './DungeonMasterView.css';
 import PlayerList from './PlayerList';
@@ -23,7 +23,7 @@ const DungeonMasterView = () => {
 	const { matchState, updateMatchState } = useMatch();
 	const [itemlist, setitemlist] = useState([]);
   const [isGameInfoModalOpen, setIsGameInfoModalOpen] = useState(false); // Step 2: Define state
-  const webSocketService = useWebSocket();
+  const webSocketService = useSSE();
 
 
   const handleOpenGameInfoModal = () => {

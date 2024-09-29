@@ -111,13 +111,12 @@ const Item = ({ id, name, count, description, value, image, rarity, type, onRigh
           )
         ) : showVoteButton ? (
 
-          matchState.loot.waiting[matchState.player] && !matchState.loot.items[lootItemID].ext.vote[matchState.player] ? (
+          matchState.loot.waiting[matchState.player] && !matchState.loot.items[lootItemID].ext.votes[matchState.player] ? (
 
             <button className="loot-vote-button" onClick={(e) => { e.stopPropagation(); lootVote(id); }}>Vote for this item</button>
           ) : (
             <div className="item-loot-text">
-              {matchState.loot.items[lootItemID].ext.vote[matchState.player] ? `You have voted for ${matchState.game.players[matchState.loot.items[lootItemID].ext.vote[matchState.player]].name}` : "You have not voted for anyone on this item"}
-              You have voted 
+              {matchState.loot.items[lootItemID].ext.votes[matchState.player] ? `Voted for ${matchState.game.players[matchState.loot.items[lootItemID].ext.votes[matchState.player]].name}` : "You have not voted for anyone on this item"}
             </div>
           )
         ) : (

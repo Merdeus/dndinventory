@@ -4,6 +4,7 @@ server/.idea
 server/.venv
 server/players.db
 server/.env
+server/__pycache__
 
 
 # dependencies

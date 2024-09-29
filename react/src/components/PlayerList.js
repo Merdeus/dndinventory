@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import './PlayerList.css';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import GoldModal from './GoldModal';
 
 
@@ -47,7 +47,7 @@ const CreatePlayerModal = ({ isOpen, onClose, onSubmit }) => {
 const PlayerList = ({ players, setPlayerGold, onButtonClick2 }) => {
 
     const [isCreatePlayerModalOpen, setIsCreatePlayerModalOpen] = useState(false);
-	const webSocketService = useWebSocket();
+	const webSocketService = useSSE();
 
 
 	const [showGoldModal, setShowGoldModal] = useState(false);

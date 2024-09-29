@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import {SelectGame} from './selectGame';
 import { SelectPlayer } from './SelectPlayer';
 import Inventory from './Inventory';
@@ -12,7 +12,7 @@ import "./Game.css";
 function Game() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const webSocketService = useWebSocket();
+    const webSocketService = useSSE();
     const { matchState, updateMatchState, updateInventories, updateInventory } = useMatch();
     const [selectedPlayerID, setSelectedPlayerID ] = useState(-1);
     const [showReconnect, setShowReconnect] = useState(false);
@@ -50,6 +50,19 @@ function Game() {
         }
       }
       webSocketService.addMessageHandler(gameinfo_handlerMessage);
+
+      const registration_handlerMessage = {
+        identifier: 'registration_handler',
+        messageType: "register",
+        callback: (message) => {
+          console.log("registration token received:", message.msg);
+          webSocketService.registration_token = message.registration_token;
+
+          webSocketService.connect();
+
+        }
+      }
+      webSocketService.addMessageHandler(registration_handlerMessage);
 
       const inventoryupdate_handlerMessage = {
         identifier: 'inventory_update_handler',
@@ -126,9 +139,11 @@ function Game() {
         console.log("Dungeon Master selected");
         handleOpenModal();
       } else {
+        console.log ("Player selected", matchState.game.game.id, playerid);
         webSocketService.sendMessage({
           type: "selectPlayer", 
-          playerid: playerid
+          playerid: playerid,
+          gameid: matchState.game.game.id
         });
       }
     };
@@ -146,6 +161,7 @@ function Game() {
       webSocketService.sendMessage({
         type: "selectPlayer", 
         playerid: selectedPlayerID,
+        gameid: matchState.game.game.id,
         dm_pass: input
       });
     };

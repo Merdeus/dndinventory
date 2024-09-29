@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import ItemModal from './ItemModal';
 import './ItemList.css';
 import Item from './Item';
@@ -102,7 +102,7 @@ const ItemList = ({ items, players }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
-  const webSocketService = useWebSocket();
+  const webSocketService = useSSE();
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);

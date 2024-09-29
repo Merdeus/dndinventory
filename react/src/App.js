@@ -1,20 +1,20 @@
 import './App.css';
 import React, { Component, useEffect, useState } from 'react';
-import { WebSocketProvider, useWebSocket } from './components/WebSocketContext';
+import { SSEProvider, useSSE } from './components/SSEContext';
 import Game from './components/Game';
 import { MatchProvider } from './components/MatchContext';
 
 
 
-function App() {
+function App() {          // App component    
   return (
     // global div with a grey background background-color: #333;
     <div className="global-container">
-      <WebSocketProvider>
+      <SSEProvider>
         <MatchProvider>
           <Game/>
         </MatchProvider>
-      </WebSocketProvider>
+      </SSEProvider>
     </div>
   );
 }

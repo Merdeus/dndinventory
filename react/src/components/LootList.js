@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import { useMatch } from './MatchContext';
 import ItemModal from './ItemModal';
 import './LootList.css';
@@ -91,7 +91,7 @@ const LootList = ({ items, currentGold, isDM }) => {
   const [goldAmount, setGoldAmount] = useState(currentGold);
   const [showGoldModal, setShowGoldModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const webSocketService = useWebSocket();
+  const webSocketService = useSSE();
   const { matchState, updateMatchState } = useMatch();
 
   const handleSearchChange = (e) => {
@@ -345,7 +345,7 @@ const LootList = ({ items, currentGold, isDM }) => {
       <>
       <div className="inventory-container" onDragOver={handleDragOver} onDrop={handleDrop}>
         <div className="inventory-header">
-          <h2>Loot { matchState.loot.phase === 1 ? " | Matching Phase" : " | Voting Phase"}</h2>
+          <h2>Loot { matchState.loot.phase === 1 ? " | Claiming Phase" : " | Voting Phase"}</h2>
           <div className='sort-div'>
             <div className="sort-label">Sort by:</div>
             <div className="sort-buttons">

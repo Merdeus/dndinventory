@@ -6,8 +6,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from main import create_new_item
 import json
 
-toFetchItems = []
-
 class ItemType(Enum):
     WEAPON = 1
     ARMOR = 2
@@ -23,6 +21,85 @@ class ItemType(Enum):
     MISC = 12
     WONDROUS = 13
 
+import csv
+
+def parse_csv(file_path):
+    """
+    Parses a CSV file and returns a list of dictionaries where each dictionary
+    represents a row with the column names as keys.
+    
+    :param file_path: str, path to the CSV file
+    :return: list of dictionaries
+    """
+    data = []
+    
+    try:
+        with open(file_path, mode='r', newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                data.append(row)
+    except FileNotFoundError:
+        print(f"Error: The file {file_path} was not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    
+    return data
+
+
+
+
+
+# Example usage
+if __name__ == "__main__":
+    file_path = 'Items.csv'  # Replace with your CSV file path
+    parsed_data = parse_csv(file_path)
+    types = set()
+    for row in parsed_data:
+        print(row)
+        row_types = [i for i in row["Type"].split(", ")]
+        for type_ in row_types:
+            types.add(type_)
+    print(len(parsed_data))
+    print(len(types), types)
+
+# generic variant
+
+type_translate = {
+    "poison" : ItemType.CONSUMABLE,
+    "armor" : ItemType.ARMOR,
+    "rod" : ItemType.WEAPON,
+    "weapon" : ItemType.WEAPON,
+    "instrument" : ItemType.MISC,
+    "gaming" : ItemType.MISC,
+    "renaissance" : ItemType.MISC,
+    "spellcasting" : ItemType.MAGICAL_ITEM,
+    "modern" : ItemType.MISC,
+    "shield" : ItemType.SHIELD,
+    "wondrous item" : ItemType.WONDROUS,
+    "treasure" : ItemType.VALUABLE,
+    "mount" : ItemType.MISC,
+    "adventuring gear" : ItemType.ADVENTURE_GEAR,
+    "trade good" : ItemType.VALUABLE,
+    "scroll" : ItemType.SCROLL,
+    "tools" : ItemType.SCROLL,
+    "futuristic" : ItemType.MISC,
+    "vehicle" : ItemType.MISC,
+    "ring" : ItemType.RING,
+    "explosive" : ItemType.CONSUMABLE,
+    "potion" : ItemType.CONSUMABLE,
+    "tack and harness" : ItemType.MISC,
+    "staff" : ItemType.STAFF,
+    "firearm" : ItemType.WEAPON,
+    "ammunition" : ItemType.MISC,
+    "other" : ItemType.MISC,
+    "food" : ItemType.CONSUMABLE,
+    "drink" : ItemType.CONSUMABLE,
+    "wand" : ItemType.MAGICAL_ITEM,
+}
+
+
+toFetchItems = []
+
 class ItemRarity(Enum): # not use auto()
     MUNDANE = 0
     COMMON = 1
@@ -32,6 +109,7 @@ class ItemRarity(Enum): # not use auto()
     EPIC = 5
     LEGENDARY = 6
     QUEST_ITEM = 7
+    UNKOWN 
 
 rarityLookup = {
     "Common": ItemRarity.COMMON,

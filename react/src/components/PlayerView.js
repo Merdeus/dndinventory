@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Inventory from './Inventory';
 import { useMatch } from './MatchContext';
-import { useWebSocket } from './WebSocketContext';
+import { useSSE } from './SSEContext';
 import LootList from './LootList';
 import './PlayerView.css';
 
 const PlayerView = () => {
   const [showLootList, setShowLootList] = useState(false);
   const { matchState } = useMatch();
-  const webSocketService = useWebSocket();
+  const webSocketService = useSSE();
 
   const [playerInventory, setPlayerInventory] = useState([]);
   const lootList = matchState.loot.items || [];
