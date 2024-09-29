@@ -1297,7 +1297,7 @@ async def handle_action(request: Request):
     if current_client is None: # Client does not have a open sse connection
         raise HTTPException(status_code=400, detail="Invalid request!")
 
-    return handle_adv_action(action_type, current_client, playerid, data)
+    return await handle_adv_action(action_type, current_client, playerid, data)
 
 
 
