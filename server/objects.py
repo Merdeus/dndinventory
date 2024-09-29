@@ -283,9 +283,7 @@ class Game(Base):
                         "gold": player.gold
                     }
                 }
-                await client.send(json.dumps(data))
-        remove_disconnected_clients()
-
+                await client.send(data)
 
     @staticmethod
     async def syncPlayerItem(gameid : int, item : (Item | int), isRemoval=False, isGlobal=False):
