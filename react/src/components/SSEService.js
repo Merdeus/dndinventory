@@ -37,6 +37,11 @@ class SSEService {
     
     // send empty GetGameInfo message to get the game info
     this.eventSource.addEventListener("register", (event) => {
+
+      // set this.token from the event data field token
+      const message = JSON.parse(event.data);
+      this.token = message.token;
+
       this.sendMessage({
         type: "GetGameInfo",
       });

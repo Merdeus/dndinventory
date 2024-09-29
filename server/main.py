@@ -1273,7 +1273,7 @@ async def handle_action(request: Request):
     
     provided_token = data.get("token")
     if provided_token is None or ip is None:
-        raise HTTPException(status_code=400, detail="Invalid request!")
+        raise HTTPException(status_code=400, detail="Invalid request! 1")
 
     ip = request.client.host
     server_side_identifier = hash(ip + provided_token + random_val)
