@@ -6,6 +6,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
+from util import ItemRarity
+
 
 from util import NotFoundByIDException, remove_disconnected_clients, clientList
 import json
