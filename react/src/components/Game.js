@@ -46,7 +46,7 @@ function Game() {
         messageType: "game_info",
         callback: (message) => {
           console.log("game info:", message);
-          updateMatchState(message);
+          updateMatchState(message.msg);
         }
       }
       webSocketService.addMessageHandler(gameinfo_handlerMessage);
