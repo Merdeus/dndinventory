@@ -1070,8 +1070,13 @@ async def register(request: Request, registration_token: str):
     res = registration_token_list.pop(registration_token, None)
 
 
+
     if res is None:
         raise HTTPException(status_code=400, detail="Invalid registration token!")
+
+    # only test, push res back
+    registration_token_list[registration_token] = res
+
 
     ip = request.client.host
     if res["ip"] != ip:
