@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
-from util import ItemRarity
+from util import ItemRarity, client_list
 
 
 from util import NotFoundByIDException, remove_disconnected_clients, clientList
@@ -242,9 +242,9 @@ class Game(Base):
 
     @staticmethod
     async def updateAllClients(gameid):
-        global clientList
-        print(f"Updating all clients", clientList, len(clientList))
-        for client in clientList:
+        global client_list
+        print(f"Updating all clients", len(client_list))
+        for _, client in client_list.items():
             if client.gameid != gameid:
                 continue
             print(f"Updating client for GameID {client.gameid}")
@@ -253,9 +253,9 @@ class Game(Base):
 
     @staticmethod
     async def updateItemList(gameid):
-        global clientList
-        print(f"Updating ItemList for all dm clients", clientList, len(clientList))
-        for client in clientList:
+        global client_list
+        print(f"Updating ItemList for all dm clients", len(client_list))
+        for _, client in client_list.items():
 
             if not client.isDM:
                 continue
@@ -289,72 +289,71 @@ class Game(Base):
     @staticmethod
     async def syncPlayerItem(gameid : int, item : (Item | int), isRemoval=False, isGlobal=False):
 
-        session = Session()
-        if type(item) == int:
-            item = Item.getFromId(item, session)
-        owner = item.owner
+        with Session() as session:
+            if type(item) == int:
+                item = Item.getFromId(item, session)
+            owner = item.owner
 
-        global clientList
-        print(f"Synchronising item {item} | isRemoval: {isRemoval} | isGlobal: {isGlobal}")
-        for client in clientList:
-            if client.gameid != gameid:
-                continue
+            global client_list
+            print(f"Synchronising item {item} | isRemoval: {isRemoval} | isGlobal: {isGlobal}")
+            for _, client in client_list.items():
+                if client.gameid != gameid:
+                    continue
 
-            if (client.isDM or client.playerid == owner) or isGlobal:
+                if (client.isDM or client.playerid == owner) or isGlobal:
 
-                if isRemoval:
-                    data = {
-                        "type": "item_removal",
-                        "msg": {
-                            "playerid": owner,
-                            "itemid": item.id
-                        }
-                    }
-                else:
-                    if client.isDM:
+                    if isRemoval:
                         data = {
-                            "type": "inventory_update",
+                            "type": "item_removal",
                             "msg": {
                                 "playerid": owner,
-                                "itemid": item.id,
-                                "item" : {
-                                    'id': item.id,
-                                    'id_prefab': item.id_prefab,
-                                    'name': item.name,
-                                    'rarity': item.rarity,
-                                    'type': item.type,
-                                    'description': item.description,
-                                    'count': item.count,
-                                    'value': item.value,
-                                    'img': item.img,
-                                    'stackable': item.prefab.stackable,
-                                    'unique': item.prefab.unique
-                                }
+                                "itemid": item.id
                             }
                         }
                     else:
-                        data = {
-                            "type": "inventory_update",
-                            "msg": {
-                                "itemid": item.id,
-                                "item": {
-                                    'id': item.id,
-                                    'id_prefab': item.id_prefab,
-                                    'name': item.name,
-                                    'rarity': item.rarity,
-                                    'type': item.type,
-                                    'description': item.description,
-                                    'count': item.count,
-                                    'value': item.value,
-                                    'img': item.img,
-                                    'stackable': item.prefab.stackable,
-                                    'unique': item.prefab.unique
+                        if client.isDM:
+                            data = {
+                                "type": "inventory_update",
+                                "msg": {
+                                    "playerid": owner,
+                                    "itemid": item.id,
+                                    "item" : {
+                                        'id': item.id,
+                                        'id_prefab': item.id_prefab,
+                                        'name': item.name,
+                                        'rarity': item.rarity,
+                                        'type': item.type,
+                                        'description': item.description,
+                                        'count': item.count,
+                                        'value': item.value,
+                                        'img': item.img,
+                                        'stackable': item.prefab.stackable,
+                                        'unique': item.prefab.unique
+                                    }
                                 }
                             }
-                        }
-                await client.send(json.dumps(data))
+                        else:
+                            data = {
+                                "type": "inventory_update",
+                                "msg": {
+                                    "itemid": item.id,
+                                    "item": {
+                                        'id': item.id,
+                                        'id_prefab': item.id_prefab,
+                                        'name': item.name,
+                                        'rarity': item.rarity,
+                                        'type': item.type,
+                                        'description': item.description,
+                                        'count': item.count,
+                                        'value': item.value,
+                                        'img': item.img,
+                                        'stackable': item.prefab.stackable,
+                                        'unique': item.prefab.unique
+                                    }
+                                }
+                            }
+                    await client.send(data)
 
-        remove_disconnected_clients()
 
     @staticmethod
     def getAllItemsWithPrefabID(gameid : int, prefabID : int, session):

@@ -1,6 +1,7 @@
 games = {}
 clientList = []
 clients_to_remove = []
+client_list = {}
 
 from dotenv import load_dotenv
 from Crypto.Cipher import AES

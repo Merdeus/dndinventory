@@ -33,7 +33,7 @@ from enum import Enum, auto
 
 
 from objects import Game, Player, Item, ItemPrefab, Session
-from util import NotFoundByIDException, LogLevel, loglevel_prefixes, ItemRarity, ItemType, _decrypt, _encrypt, clientList
+from util import NotFoundByIDException, LogLevel, loglevel_prefixes, ItemRarity, ItemType, _decrypt, _encrypt, clientList, client_list
 from log import log, logErrorAndNotify
 from client import Client, sendMessageToPlayer
 from actions import handle_adv_action
@@ -54,9 +54,6 @@ app.add_middleware(
 )
 
 
-
-
-client_list = {}
 token_list = {}
 
 registration_token_list = {}
@@ -306,8 +303,7 @@ class LootPool:
             if client.gameid != self.gameid:
                 continue
             await client.send(json.dumps(to_send_list))
-        remove_disconnected_clients()
-    
+
     @classmethod
     def get_all_instances(cls):
         return cls._instances
@@ -1204,7 +1200,7 @@ def action_selectPlayer(data, ip):
 
             return {
                 "type": "register",
-                "playerid": ply.id,
+                "playerid": -1,
                 "registration_token": registration_token
             }
 
