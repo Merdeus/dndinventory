@@ -20,7 +20,7 @@ class SSEService {
   connect(url) {
 
     if (url === undefined) {
-      url = 'http://localhost:8227/dnd/backend/register'; // only currently for testing purposes
+      url = '/dnd/backend/register'; // only currently for testing purposes
     }
 
     if (this.eventSource) {
@@ -79,7 +79,7 @@ class SSEService {
       message.token = this.token;
     }
 
-    fetch('http://localhost:8227/dnd/backend/action', {
+    fetch('/dnd/backend/action', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
