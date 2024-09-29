@@ -55,6 +55,10 @@ class SSEService {
         });
     });
 
+    // print the amount of messageHanlder
+    console.log('SSEService: Added', this.messageHandlers.length, 'message handlers');
+    console.log(this.messageHandlers);
+
     this.eventSource.onerror = (error) => {
       console.error('SSEService: Error connecting to server', error);
       this.disconnect();
