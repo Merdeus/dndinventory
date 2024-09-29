@@ -1059,6 +1059,13 @@ def ValidateSyncToken(token):
     return isValid, dec_token
 
 
+def generateToken(first, second, third, randomness=True):
+    input_str = str(first) + str(second) + str(third) + (str(random.randint(0, 10000)) if randomness else "")
+    hash_obj = hashlib.sha256(input_str.encode('utf-8')).digest()
+    token = base64.b32encode(hash_obj).decode('utf-8')
+    return token[:12]
+
+
 @app.get("/register/{registration_token}")
 async def register(request: Request, registration_token: str):
 
@@ -1074,8 +1081,8 @@ async def register(request: Request, registration_token: str):
     if res["ip"] != ip:
         raise HTTPException(status_code=400, detail="Invalid registration token!")
     
-    new_token = hash(int.from_bytes(os.urandom(8), byteorder="big"))
-    new_server_side_identifier = hash(ip + str(new_token) + str(random_val))
+    new_token = generateToken(res["playerid"], res["gameid"], ip)
+    new_server_side_identifier = generateToken("server-identifier-", new_token, ip, False)
 
     print(f"New client registered with token {new_token} and server side identifier {new_server_side_identifier}")
     print(ip + str(new_token) + str(random_val))
@@ -1163,13 +1170,6 @@ def action_createSession(data):
         }
     }
 
-
-def generateRegistrationToken(playerid, gameid, ip):
-    input_str = str(playerid) + str(gameid) + ip + str(random.randint(0, 10000))
-    hash_obj = hashlib.sha256(input_str.encode('utf-8')).digest()
-    token = base64.b32encode(hash_obj).decode('utf-8')
-    return token[:12]
-
 def action_selectPlayer(data, ip):
     """Select a player for the game and give the player a registration token"""
 
@@ -1192,7 +1192,7 @@ def action_selectPlayer(data, ip):
         if provided_pass is not None and (provided_pass == game.dm_pass or provided_pass == "FelixStinkt"): # super secure hard coded backup pw
             print("Provided password is correct. New DM Client...")
 
-            registration_token = generateRegistrationToken(-1, game.id, ip)
+            registration_token = generateToken(-1, game.id, ip)
             if registration_token is None or registration_token in registration_token_list:
                 raise HTTPException(status_code=400, detail="Invalid request 3")
             
@@ -1214,7 +1214,7 @@ def action_selectPlayer(data, ip):
     try:
         ply = Player.getFromId(playerToSelect, session)
 
-        registration_token = generateRegistrationToken(ply.id, game.id, ip)
+        registration_token = generateToken(ply.id, game.id, ip)
 
         if registration_token is None or registration_token in registration_token_list:
             raise HTTPException(status_code=400, detail="Invalid request 5")
@@ -1279,10 +1279,10 @@ async def handle_action(request: Request):
     if provided_token is None or ip is None:
         raise HTTPException(status_code=400, detail="Invalid request! 1")
 
-    server_side_identifier = hash(ip + str(provided_token) + str(random_val))
+    server_side_identifier = generateToken("server-identifier-", provided_token, ip, False)
     
     #print the current server side identifier and every in the list
-    print(ip + str(provided_token) + str(random_val))
+    print("server-identifier-", provided_token, ip)
     print(server_side_identifier)
     print(token_list)
 
