@@ -45,10 +45,14 @@ class SSEService {
   }
 
   handleMessage = (event) => {
+    console.log('SSEService: Received event:', event);
     const message = JSON.parse(event.data);
-    const { type } = message;
-
     console.log('SSEService: Received message:', message);
+
+    // get event type
+    const type = message.type;
+
+    
     this.messageHandlers
       .filter(handler => handler.messageType === type)
       .forEach(handler => handler.callback(message));

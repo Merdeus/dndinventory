@@ -55,7 +55,7 @@ function Game() {
         identifier: 'registration_handler',
         messageType: "register",
         callback: (message) => {
-          console.log("registration token received:", message.msg);
+          console.log("registration token received:", message.registration_token);
           webSocketService.registration_token = message.registration_token;
 
           webSocketService.connect();
