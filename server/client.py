@@ -84,43 +84,11 @@ class Client:
 
         return all_inventories
     
-    def isAllowedToSell(self, item : Item) -> bool:
+    def isAllowedToSell(self, item : Item, session) -> bool:
         if self.isDM:
             return False
-        # TODO: Add check that global sell is active and item is not a questitem
-        return True
-
-
-
-#     async def sendGameInfo(self):
-#         print(f"Sending game info to client with playerid {self.playerid}")
-#         session = Session()
-#         game = Game.getFromId(self.gameid, session)
-
-#         data = {
-#             "type" : "game_info",
-#             "msg" : {
-#                 "game": game.getInfo(session=session),
-#                 "player": self.playerid,
-#                 "isDM": self.isDM,
-#                 "inventory": self.getInventory() if not self.isDM else None,
-#                 "inventories" : self.getInventories() if self.isDM else None,
-#             }
-#         }
-
-#         session.close()
-#         await self.send(json.dumps(data))
-
-#     async def sendItemList(self):
-#         await self.send(json.dumps({
-#             "type": "game_info",
-#             "msg": {
-#                 "itemlist": ItemPrefab.getList(self.gameid)
-#             }
-#         }))
-
-
-
+        current_game = Game.getFromId(self.gameid, session)
+        return current_game.sellingAllowed
 
     async def sendGameSync(self, session):
         print(f"Sending game sync to client with playerid {self.playerid}")
@@ -146,8 +114,6 @@ class Client:
             })
 
 
-
-
     async def send(self, message):
         await self.queue.put(message)
 
@@ -162,6 +128,6 @@ class Client:
 
 async def sendMessageToPlayer(playerid, msg):
     # loop through client list and send message to every client with corresponding playerid
-    for _, client in clientList.items():
+    for _, client in client_list.items():
         if client.playerid == playerid:
             await client.send(msg)

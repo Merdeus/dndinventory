@@ -92,6 +92,7 @@ async def action_SendItem(client : Client, playerid : int, data, session : sqlal
     if not item.isPlayerOwner(client.playerid):
         return False, "You can't send an item that is not owned by your player!"
 
+    await Game.syncPlayerItem(client.gameid, item, isRemoval=True)
     item.owner = target_player.id
     session.commit()
     await Game.syncPlayerItem(client.gameid, item)
@@ -108,14 +109,27 @@ register_action("SendItem", action_SendItem)
 async def action_DeleteItem(client : Client, playerid : int, data, session : sqlalchemy.orm.Session):
     item_id = data.get("item_id", None)
     current_item = Item.getFromId(item_id, session)
+    curr_player = Player.getFromId(current_item.owner, session)
+
+
+    log_msg = f"Item {current_item.name} from {curr_player.name} has been deleted by {"Dungeon Master" if client.isDM else "Player"}"
+    target_msg = f"Item {current_item.name} has been deleted by {"Dungeon Master" if client.isDM else "yourself"}"
 
     if not (client.isDM or (client.playerid  == current_item.owner)):
         return False, "You are not allowed to delete this item"
 
     await Game.syncPlayerItem(client.gameid, current_item.id, isRemoval=True)
+    await sendMessageToPlayer(current_item.owner,
+        {
+            "type": "notification",
+            "msg": target_msg
+        }
+    )
     session.delete(current_item)
     session.commit()
     session.close()
+
+    return True, log_msg
 
 register_action("DeleteItem", action_DeleteItem)
 
@@ -223,7 +237,7 @@ async def action_SellItem(client : Client, playerid : int, data, session : sqlal
         return False, f"You can't sell an item that is not owned by your player!"
     if item.isQuestItem():
         return False, f"You can't sell a quest item!"
-    if not client.isAllowedToSell(item):
+    if not client.isAllowedToSell(item, session):
         return False, f"You currently are not able to sell anything."
 
     ply = Player.getFromId(client.playerid, session)
@@ -245,3 +259,26 @@ async def action_GetGameInfo(client : Client, playerid : int, data, session : sq
     return True, ""
 
 register_action("GetGameInfo", action_GetGameInfo)
+
+async def action_ToggleSelling(client : Client, playerid : int, data, session : sqlalchemy.orm.Session):
+    if not client.isDM:
+        return False, "You are not a DM, you can't toggle selling"
+    
+    current_game = Game.getFromId(client.gameid, session)
+    current_game.allow_selling = not current_game.allow_selling
+
+    # Notify all players of the game
+    for _,client in client_list.items():
+        if client is not None and client.gameid == current_game.id:
+            await client.send({
+                "type": "notification",
+                "msg": f"Selling has been toggled to " + ("enabled" if current_game.allow_selling else "disabled")
+            })
+            await client.send({
+                "type": "SellingToggled",
+                "msg": current_game.allow_selling
+            })
+
+    return True, f"(GameID:{current_game.id}) Selling has been toggled to " + ("enabled" if current_game.allow_selling else "disabled")
+register_action("ToggleSelling", action_ToggleSelling)
+

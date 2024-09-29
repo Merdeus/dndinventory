@@ -179,7 +179,6 @@ class GameSettings(Base):
     shop = relationship("Shop")
 
 
-
 class Game(Base):
     __tablename__ = 'games'
 
@@ -189,6 +188,8 @@ class Game(Base):
     join_code = Column(String)
     players = relationship("Player", back_populates="game")
     settings = relationship("GameSettings", uselist=False, back_populates="game")
+
+    sellingAllowed = False
 
     def getInfo(self, session=None):
 
@@ -211,6 +212,7 @@ class Game(Base):
                 "id": self.id,
                 "name": self.name,
                 "join_code": self.join_code,
+                "sellingAllowed": self.sellingAllowed
             },
             "players": t_players
         }
