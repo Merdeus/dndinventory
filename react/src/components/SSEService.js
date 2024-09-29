@@ -48,7 +48,11 @@ class SSEService {
     });
 
     this.messageHandlers.forEach(handler => {
-      this.eventSource.addEventListener(handler.messageType, handler.callback);
+      this.eventSource.addEventListener(handler.messageType, 
+        // wrapper to pass directly the event.data and parse it json
+        (event) => {
+          handler.callback(JSON.parse(event.data));
+        });
     });
 
     this.eventSource.onerror = (error) => {

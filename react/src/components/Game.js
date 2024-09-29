@@ -45,8 +45,8 @@ function Game() {
         identifier: 'global_info_handler',
         messageType: "game_info",
         callback: (message) => {
-          console.log("game info:", message.msg);
-          updateMatchState(message.msg);
+          console.log("game info:", message);
+          updateMatchState(message);
         }
       }
       webSocketService.addMessageHandler(gameinfo_handlerMessage);
