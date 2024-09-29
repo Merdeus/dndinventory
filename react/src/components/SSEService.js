@@ -57,6 +57,7 @@ class SSEService {
 
     this.eventSource.onerror = (error) => {
       console.error('SSEService: Error connecting to server', error);
+      this.disconnect();
     };
 
     console.log('SSEService: Connected to server');
