@@ -35,8 +35,12 @@ class SSEService {
 
     this.eventSource = new EventSource(url + "/" + this.registration_token);
     
-    this.eventSource.onmessage = this.handleMessage;
+    //this.eventSource.onmessage = this.handleMessage;
     
+    this.messageHandlers.forEach(handler => {
+      this.eventSource.addEventListener(handler.messageType, handler.callback);
+    });
+
     this.eventSource.onerror = (error) => {
       console.error('SSEService: Error connecting to server', error);
     };
