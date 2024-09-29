@@ -27,7 +27,7 @@ const PlayerView = () => {
   const [isConnected, setIsConnected] = useState(true);
 
   const callbackIsConnected = (val) => {
-    setIsConnected(val);
+    setIsConnected(!val);
   }
 
   useEffect(() => {
