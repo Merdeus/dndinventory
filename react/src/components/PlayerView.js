@@ -24,7 +24,7 @@ const PlayerView = () => {
   const [playerInventory, setPlayerInventory] = useState([]);
   const lootList = matchState.loot.items || [];
 
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const callbackIsConnected = (val) => {
     setIsConnected(val);
