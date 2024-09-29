@@ -1286,11 +1286,11 @@ async def handle_action(request: Request):
     print(server_side_identifier)
     print(token_list)
 
-    if server_side_identifier not in token_list or token_list[server_side_identifier].token != provided_token:
+    if server_side_identifier not in token_list or token_list[server_side_identifier]["token"] != provided_token:
         raise HTTPException(status_code=400, detail="Invalid request!")
     
-    playerid = token_list[server_side_identifier].playerid
-    clientid = token_list[server_side_identifier].clientid
+    playerid = token_list[server_side_identifier]["playerid"]
+    clientid = token_list[server_side_identifier]["clientid"]
 
     current_client = client_list.get(clientid, None)
 
