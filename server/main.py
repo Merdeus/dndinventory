@@ -1237,7 +1237,7 @@ async def register(request: Request, registration_token: str):
         try:
 
             # first message is the registration message
-            yield {"type": "register", "clientid": clientid, "playerid": res.playerid, "token": new_token}
+            yield {"type": "register", "clientid": clientid, "playerid": res["playerid"], "token": new_token}
 
             while True:
                 msg = await client.queue.get()
