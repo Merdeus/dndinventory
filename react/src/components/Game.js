@@ -99,15 +99,18 @@ function Game() {
         identifier: 'gold_update_handler',
         messageType: "gold_update",
         callback: (message) => {
-          if (matchState.isDM) {
-            console.log("Gold Update:", message.msg, Object.keys(matchState.inventories), matchState.inventories[message.msg.playerid]);
+
+          const currentMatchState = matchStateRef.current;
+
+          if (currentMatchState.isDM) {
+            console.log("Gold Update:", message.msg, Object.keys(currentMatchState.inventories), currentMatchState.inventories[message.msg.playerid]);
             //matchState.game.players[message.msg.playerid].gold = message.msg.gold;
-            matchState.inventories[message.msg.playerid].gold = message.msg.gold;
-            matchState.game.players[message.msg.playerid].gold = message.msg.gold;
+            currentMatchState.inventories[message.msg.playerid].gold = message.msg.gold;
+            currentMatchState.game.players[message.msg.playerid].gold = message.msg.gold;
             updateMatchState([]); // stoopid
           } else {
             console.log("Gold Update:", message.msg);
-            matchState.game.players[message.msg.playerid].gold = message.msg.gold;
+            currentMatchState.game.players[message.msg.playerid].gold = message.msg.gold;
             updateMatchState([]);
           }
         }
